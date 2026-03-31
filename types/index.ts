@@ -10,7 +10,7 @@ export interface Profile {
 }
 
 export interface Book {
-  id: string; // Google Books volume ID
+  id: string; // Open Library work ID (e.g. "OL45804W")
   title: string;
   authors: string[] | null;
   description: string | null;
@@ -38,32 +38,30 @@ export interface UserBook {
   book?: Book;
 }
 
-// Google Books API response types
-export interface GoogleBooksVolume {
-  id: string;
-  volumeInfo: {
-    title: string;
-    subtitle?: string;
-    authors?: string[];
-    description?: string;
-    imageLinks?: {
-      thumbnail?: string;
-      smallThumbnail?: string;
-    };
-    industryIdentifiers?: Array<{
-      type: string;
-      identifier: string;
-    }>;
-    pageCount?: number;
-    publishedDate?: string;
-    categories?: string[];
-    publisher?: string;
-  };
+// Open Library API response types
+export interface OLSearchDoc {
+  key: string; // "/works/OL45804W"
+  title: string;
+  author_name?: string[];
+  cover_i?: number;
+  first_publish_year?: number;
+  number_of_pages_median?: number;
+  subject?: string[];
+  isbn?: string[];
 }
 
-export interface GoogleBooksResponse {
-  totalItems: number;
-  items?: GoogleBooksVolume[];
+export interface OLSearchResponse {
+  numFound: number;
+  docs: OLSearchDoc[];
+}
+
+export interface OLWork {
+  key: string;
+  title: string;
+  description?: string | { value: string };
+  subjects?: string[];
+  covers?: number[];
+  authors?: Array<{ author: { key: string } }>;
 }
 
 // Shelf label map

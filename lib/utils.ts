@@ -1,30 +1,44 @@
-import type { GoogleBooksVolume, Book } from '@/types';
+import type { OLSearchDoc, OLWork, Book } from '@/types';
 
 export function cn(...classes: (string | undefined | null | false)[]) {
   return classes.filter(Boolean).join(' ');
 }
 
-export function googleVolumeToBook(volume: GoogleBooksVolume): Book {
-  const { id, volumeInfo } = volume;
-  const isbn13 = volumeInfo.industryIdentifiers?.find(
-    (i) => i.type === 'ISBN_13'
-  )?.identifier ?? null;
+export function olSearchDocToBook(doc: OLSearchDoc): Book {
+  return {
+    id: doc.key.replace('/works/', ''),
+    title: doc.title,
+    authors: doc.author_name ?? null,
+    description: null,
+    cover_url: doc.cover_i
+      ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg`
+      : null,
+    isbn_13: doc.isbn?.find((i) => i.length === 13) ?? null,
+    page_count: doc.number_of_pages_median ?? null,
+    published_date: doc.first_publish_year?.toString() ?? null,
+    categories: doc.subject?.slice(0, 3) ?? null,
+    created_at: new Date().toISOString(),
+  };
+}
 
-  // Use https for cover images
-  const coverUrl = volumeInfo.imageLinks?.thumbnail
-    ? volumeInfo.imageLinks.thumbnail.replace('http://', 'https://')
-    : null;
+export function olWorkToBook(work: OLWork, authors: string[]): Book {
+  const description =
+    typeof work.description === 'string'
+      ? work.description
+      : work.description?.value ?? null;
 
   return {
-    id,
-    title: volumeInfo.title,
-    authors: volumeInfo.authors ?? null,
-    description: volumeInfo.description ?? null,
-    cover_url: coverUrl,
-    isbn_13: isbn13,
-    page_count: volumeInfo.pageCount ?? null,
-    published_date: volumeInfo.publishedDate ?? null,
-    categories: volumeInfo.categories ?? null,
+    id: work.key.replace('/works/', ''),
+    title: work.title,
+    authors: authors.length > 0 ? authors : null,
+    description,
+    cover_url: work.covers?.[0]
+      ? `https://covers.openlibrary.org/b/id/${work.covers[0]}-M.jpg`
+      : null,
+    isbn_13: null,
+    page_count: null,
+    published_date: null,
+    categories: work.subjects?.slice(0, 3) ?? null,
     created_at: new Date().toISOString(),
   };
 }

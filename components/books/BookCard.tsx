@@ -19,6 +19,22 @@ const shelfBadgeVariant: Record<ShelfType, 'amber' | 'blue' | 'green'> = {
   read: 'green',
 };
 
+const CATEGORY_COLORS = [
+  'bg-blue-50 text-blue-700 border border-blue-200',
+  'bg-purple-50 text-purple-700 border border-purple-200',
+  'bg-amber-50 text-amber-700 border border-amber-200',
+  'bg-green-50 text-green-700 border border-green-200',
+  'bg-rose-50 text-rose-700 border border-rose-200',
+  'bg-teal-50 text-teal-700 border border-teal-200',
+  'bg-orange-50 text-orange-700 border border-orange-200',
+  'bg-indigo-50 text-indigo-700 border border-indigo-200',
+];
+
+function getCategoryColor(category: string): string {
+  const hash = Array.from(category).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  return CATEGORY_COLORS[hash % CATEGORY_COLORS.length];
+}
+
 export function BookCard({ book, userBook, compact = false }: BookCardProps) {
   const progress =
     userBook?.shelf === 'reading' &&
@@ -68,9 +84,11 @@ export function BookCard({ book, userBook, compact = false }: BookCardProps) {
               {SHELF_LABELS[userBook.shelf]}
             </Badge>
           )}
-          {userBook?.rating && <StarRating value={userBook.rating} readonly size="sm" />}
+          {userBook?.rating ? <StarRating value={userBook.rating} readonly size="sm" /> : null}
           {!compact && book.categories?.[0] && (
-            <span className="text-xs text-muted opacity-60">{book.categories[0]}</span>
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(book.categories[0])}`}>
+              {book.categories[0]}
+            </span>
           )}
         </div>
       </div>

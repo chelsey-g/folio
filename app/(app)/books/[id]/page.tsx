@@ -1,25 +1,39 @@
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { googleVolumeToBook, formatAuthors } from '@/lib/utils';
+import { formatAuthors, olWorkToBook } from '@/lib/utils';
 import { BookCover } from '@/components/books/BookCover';
 import { ShelfSelector } from '@/components/books/ShelfSelector';
 import { ReviewForm } from '@/components/books/ReviewForm';
 import { ProgressTracker } from '@/components/books/ProgressTracker';
 import { StarRating } from '@/components/ui/StarRating';
-import type { UserBook } from '@/types';
+import type { UserBook, Book, OLWork } from '@/types';
 
 interface Props { params: Promise<{ id: string }> }
 
 export default async function BookDetailPage({ params }: Props) {
   const { id } = await params;
 
-  const res = await fetch(`https://www.googleapis.com/books/v1/volumes/${id}`, {
+  const workRes = await fetch(`https://openlibrary.org/works/${id}.json`, {
     next: { revalidate: 3600 },
   });
-  if (!res.ok) notFound();
+  if (!workRes.ok) notFound();
 
-  const volume = await res.json();
-  const book   = googleVolumeToBook(volume);
+  const work: OLWork = await workRes.json();
+
+  const authorKeys = (work.authors ?? []).slice(0, 3).map((a) => a.author.key);
+  const authorNames = await Promise.all(
+    authorKeys.map(async (key) => {
+      try {
+        const r = await fetch(`https://openlibrary.org${key}.json`, { next: { revalidate: 86400 } });
+        const data = await r.json();
+        return typeof data.name === 'string' ? data.name : null;
+      } catch {
+        return null;
+      }
+    })
+  ).then((names) => names.filter((n): n is string => n !== null));
+
+  const book: Book = olWorkToBook(work, authorNames);
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

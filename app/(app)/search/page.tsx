@@ -2,10 +2,16 @@
 
 import { useState, useCallback } from 'react';
 import { BookCard } from '@/components/books/BookCard';
-import { googleVolumeToBook } from '@/lib/utils';
-import type { GoogleBooksResponse, Book } from '@/types';
+import type { Book } from '@/types';
 
-const QUICK_SEARCHES = ['Fiction', 'Science', 'History', 'Philosophy', 'Fantasy', 'Biography'];
+const QUICK_SEARCHES = [
+  { label: 'Fiction',     color: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' },
+  { label: 'Science',     color: 'bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100' },
+  { label: 'History',     color: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' },
+  { label: 'Philosophy',  color: 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100' },
+  { label: 'Fantasy',     color: 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100' },
+  { label: 'Biography',   color: 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' },
+];
 
 export default function SearchPage() {
   const [query, setQuery] = useState('');
@@ -20,8 +26,8 @@ export default function SearchPage() {
     setSearched(true);
     setActiveQuery(q.trim());
     const res = await fetch(`/api/books?q=${encodeURIComponent(q.trim())}`);
-    const data: GoogleBooksResponse = await res.json();
-    setResults((data.items ?? []).map(googleVolumeToBook));
+    const data: { items: Book[] } = await res.json();
+    setResults(data.items ?? []);
     setLoading(false);
   }, []);
 
@@ -56,13 +62,13 @@ export default function SearchPage() {
       {/* Quick chips */}
       {!searched && (
         <div className="flex flex-wrap gap-2 mb-10">
-          {QUICK_SEARCHES.map((tag) => (
+          {QUICK_SEARCHES.map(({ label, color }) => (
             <button
-              key={tag}
-              onClick={() => { setQuery(tag); search(tag); }}
-              className="px-3 py-1.5 bg-surface border border-subtle rounded-full text-xs font-medium text-secondary hover:border-default hover:text-link hover:bg-accent-soft transition-all"
+              key={label}
+              onClick={() => { setQuery(label); search(label); }}
+              className={`px-3 py-1.5 border rounded-full text-xs font-medium transition-all ${color}`}
             >
-              {tag}
+              {label}
             </button>
           ))}
         </div>
