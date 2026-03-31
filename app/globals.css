@@ -1,26 +1,131 @@
 @import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@source not "../.claude/**";
+@source not "../tasks/**";
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-geist);
+  --font-serif: var(--font-playfair);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ─── Semantic custom utilities ─────────────────────────────── */
+
+@utility bg-surface        { background-color: var(--surface); }
+@utility bg-surface-hover  { background-color: var(--surface-hover); }
+@utility bg-accent-soft    { background-color: var(--accent-bg); }
+@utility bg-input          { background-color: var(--input-bg); }
+@utility bg-btn            { background-color: var(--btn); }
+@utility bg-nav            { background-color: var(--nav-bg); }
+
+@utility border-subtle      { border-color: var(--border); }
+@utility border-default     { border-color: var(--border-strong); }
+@utility border-accent-soft { border-color: var(--accent-border); }
+@utility border-input       { border-color: var(--input-border); }
+
+@utility text-primary   { color: var(--text-1); }
+@utility text-secondary { color: var(--text-2); }
+@utility text-muted     { color: var(--text-3); }
+@utility text-link      { color: var(--link); }
+@utility text-btn-fg    { color: var(--btn-text); }
+
+
+/* ─── Default theme (Parchment) applied to root ─────────────── */
+
+:root {
+  --bg:           #F7F3EC;
+  --surface:      #FFFFFF;
+  --surface-hover:#FDFCF9;
+  --border:       #E8E2D8;
+  --border-strong:#CFC8BC;
+  --text-1:       #1C1917;
+  --text-2:       #57534E;
+  --text-3:       #A8A29E;
+  --link:         #A8510F;
+  --accent-bg:    #FEF6ED;
+  --accent-border:#FDEBD5;
+  --btn:          #1C1917;
+  --btn-text:     #FFFFFF;
+  --input-bg:     #FDFCF9;
+  --input-border: #E8E2D8;
+  --nav-bg:       rgba(255,255,255,0.85);
+  --nav-border:   rgba(232,226,216,0.8);
 }
+
+/* ─── Midnight ───────────────────────────────────────────────── */
+
+[data-theme="midnight"] {
+  --bg:           #0F0F18;
+  --surface:      #1A1A28;
+  --surface-hover:#222235;
+  --border:       #2D2D45;
+  --border-strong:#3D3D58;
+  --text-1:       #E8E8FF;
+  --text-2:       #8888B0;
+  --text-3:       #505070;
+  --link:         #9D90FF;
+  --accent-bg:    #1E1E38;
+  --accent-border:#2A2A55;
+  --btn:          #7C72F5;
+  --btn-text:     #FFFFFF;
+  --input-bg:     #1A1A28;
+  --input-border: #2D2D45;
+  --nav-bg:       rgba(26,26,40,0.92);
+  --nav-border:   rgba(45,45,69,0.8);
+}
+
+/* ─── Forest ─────────────────────────────────────────────────── */
+
+[data-theme="forest"] {
+  --bg:           #0B1A0E;
+  --surface:      #112516;
+  --surface-hover:#183020;
+  --border:       #1E3824;
+  --border-strong:#2A4832;
+  --text-1:       #DDEEE0;
+  --text-2:       #6E9E74;
+  --text-3:       #3D6442;
+  --link:         #4ADE6A;
+  --accent-bg:    #0A200F;
+  --accent-border:#153518;
+  --btn:          #22C55E;
+  --btn-text:     #042008;
+  --input-bg:     #112516;
+  --input-border: #1E3824;
+  --nav-bg:       rgba(17,37,22,0.92);
+  --nav-border:   rgba(30,56,36,0.8);
+}
+
+/* ─── Rose ───────────────────────────────────────────────────── */
+
+[data-theme="rose"] {
+  --bg:           #FDF4F6;
+  --surface:      #FFFFFF;
+  --surface-hover:#FFF8FA;
+  --border:       #F4DDE3;
+  --border-strong:#ECCDD5;
+  --text-1:       #1A0B0E;
+  --text-2:       #7A5560;
+  --text-3:       #B8979E;
+  --link:         #BE1239;
+  --accent-bg:    #FFF1F4;
+  --accent-border:#FFE4EA;
+  --btn:          #1A0B0E;
+  --btn-text:     #FFFFFF;
+  --input-bg:     #FFF8FA;
+  --input-border: #F4DDE3;
+  --nav-bg:       rgba(255,255,255,0.85);
+  --nav-border:   rgba(244,221,227,0.8);
+}
+
+/* ─── Global base ────────────────────────────────────────────── */
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg);
+  color: var(--text-1);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
