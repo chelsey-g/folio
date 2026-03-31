@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { GoogleBooksResponse } from '@/types';
+import { isCollectionOrSet } from '@/lib/utils';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -26,5 +27,6 @@ export async function GET(request: Request) {
   if (!res.ok) return NextResponse.json({ error: 'Google Books API error' }, { status: 502 });
 
   const data: GoogleBooksResponse = await res.json();
-  return NextResponse.json(data);
+  const filtered = (data.items ?? []).filter((v) => !isCollectionOrSet(v));
+  return NextResponse.json({ ...data, items: filtered });
 }
