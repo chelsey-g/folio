@@ -2,23 +2,22 @@ import { cn } from '@/lib/utils';
 
 interface BadgeProps {
   children: React.ReactNode;
-  variant?: 'default' | 'amber' | 'green' | 'blue' | 'ember';
+  variant?: 'default' | 'amber' | 'green' | 'blue';
   className?: string;
 }
 
 const variants = {
-  default: 'bg-stone-100 text-stone-600 border border-stone-200',
-  amber: 'bg-amber-50 text-amber-700 border border-amber-200',
-  green: 'bg-green-50 text-green-700 border border-green-200',
-  blue: 'bg-blue-50 text-blue-700 border border-blue-200',
-  ember: 'bg-ember-50 text-ember-700 border border-ember-100',
+  default: 'bg-[var(--surface-hover)] text-[var(--text-2)] border-[var(--border)]',
+  amber:   'bg-amber-500/10 text-amber-500 border-amber-500/20',
+  green:   'bg-green-500/10 text-green-500 border-green-500/20',
+  blue:    'bg-[var(--accent-bg)] text-[var(--link)] border-[var(--accent-border)]',
 };
 
 export function Badge({ children, variant = 'default', className }: BadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
+        'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border',
         variants[variant],
         className
       )}

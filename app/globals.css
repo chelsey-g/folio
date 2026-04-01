@@ -27,27 +27,57 @@
 @utility text-link      { color: var(--link); }
 @utility text-btn-fg    { color: var(--btn-text); }
 
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
 
-/* ─── Default theme (Parchment) applied to root ─────────────── */
+/* ─── Staggered reveal animations ───────────────────────────── */
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@utility animate-in {
+  animation: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@utility animate-fade {
+  animation: fade-in 0.4s ease both;
+}
+
+@utility delay-1 { animation-delay: 60ms; }
+@utility delay-2 { animation-delay: 120ms; }
+@utility delay-3 { animation-delay: 180ms; }
+@utility delay-4 { animation-delay: 240ms; }
+@utility delay-5 { animation-delay: 300ms; }
+
+/* ─── Default theme (Parchment) ──────────────────────────────── */
 
 :root {
-  --bg:           #F7F3EC;
-  --surface:      #FFFFFF;
-  --surface-hover:#FDFCF9;
-  --border:       #E8E2D8;
-  --border-strong:#CFC8BC;
-  --text-1:       #1C1917;
-  --text-2:       #57534E;
-  --text-3:       #A8A29E;
-  --link:         #A8510F;
-  --accent-bg:    #FEF6ED;
-  --accent-border:#FDEBD5;
-  --btn:          #1C1917;
-  --btn-text:     #FFFFFF;
-  --input-bg:     #FDFCF9;
-  --input-border: #E8E2D8;
-  --nav-bg:       rgba(255,255,255,0.85);
-  --nav-border:   rgba(232,226,216,0.8);
+  --bg:           #F5F0E8;
+  --surface:      #FEFCF8;
+  --surface-hover:#F9F6EF;
+  --border:       #E8E1D4;
+  --border-strong:#D4C9B8;
+  --text-1:       #1A1614;
+  --text-2:       #574F47;
+  --text-3:       #A89E94;
+  --link:         #A0470A;
+  --accent-bg:    #FEF5E8;
+  --accent-border:#FCEBD1;
+  --btn:          #1A1614;
+  --btn-text:     #FEFCF8;
+  --input-bg:     #FEFCF8;
+  --input-border: #E8E1D4;
+  --nav-bg:       rgba(254,252,248,0.88);
+  --nav-border:   rgba(232,225,212,0.7);
 }
 
 /* ─── Midnight ───────────────────────────────────────────────── */
@@ -121,7 +151,19 @@
 body {
   background-color: var(--bg);
   color: var(--text-1);
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Paper grain — applied once, fixed, invisible to interactions */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
 }
 
 *:focus-visible {

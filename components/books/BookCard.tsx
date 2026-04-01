@@ -15,8 +15,8 @@ interface BookCardProps {
 
 const shelfBadgeVariant: Record<ShelfType, 'amber' | 'blue' | 'green'> = {
   want_to_read: 'amber',
-  reading: 'blue',
-  read: 'green',
+  reading:      'blue',
+  read:         'green',
 };
 
 const CATEGORY_COLORS = [
@@ -46,39 +46,41 @@ export function BookCard({ book, userBook, compact = false }: BookCardProps) {
   return (
     <Link
       href={`/books/${book.id}`}
-      className="flex gap-4 px-4 py-3.5 bg-surface hover:bg-surface-hover transition-colors duration-150 group"
+      className="flex gap-4 px-4 py-4 bg-surface hover:bg-surface-hover transition-colors duration-150 group"
     >
-      <div className="flex-shrink-0 shadow-md shadow-black/10 rounded-sm group-hover:shadow-lg transition-shadow duration-200">
+      <div className="flex-shrink-0 shadow-md shadow-black/15 rounded-sm group-hover:shadow-lg group-hover:-translate-y-px transition-all duration-200">
         <BookCover
           coverUrl={book.cover_url}
           title={book.title}
-          width={compact ? 40 : 56}
-          height={compact ? 60 : 84}
+          width={compact ? 44 : 60}
+          height={compact ? 66 : 90}
         />
       </div>
 
-      <div className="flex-1 min-w-0 py-0.5">
-        <p className="font-semibold text-primary text-sm leading-snug line-clamp-2 group-hover:text-link transition-colors duration-150">
-          {book.title}
-        </p>
-        <p className="text-xs text-muted mt-0.5">{formatAuthors(book.authors)}</p>
+      <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
+        <div>
+          <p className="font-semibold text-primary text-sm leading-snug line-clamp-1 group-hover:text-link transition-colors duration-150">
+            {book.title}
+          </p>
+          <p className="text-xs text-muted mt-0.5">{formatAuthors(book.authors)}</p>
+        </div>
 
         {!compact && book.description && (
-          <p className="text-xs text-muted mt-1.5 line-clamp-2 leading-relaxed">
-            {truncate(book.description.replace(/<[^>]+>/g, ''), 130)}
+          <p className="text-xs text-muted line-clamp-2 leading-relaxed">
+            {truncate(book.description.replace(/<[^>]+>/g, ''), 120)}
           </p>
         )}
 
         {progress !== null && (
-          <div className="mt-2 space-y-1">
+          <div className="space-y-1 mt-0.5">
             <ProgressBar value={progress} />
-            <span className="text-xs text-muted">
-              {progress}% · {userBook?.current_page} of {book.page_count} pages
+            <span className="text-xs text-muted tabular-nums">
+              {progress}% · {userBook?.current_page} / {book.page_count} pages
             </span>
           </div>
         )}
 
-        <div className="flex items-center gap-2 mt-2 flex-wrap">
+        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           {userBook && (
             <Badge variant={shelfBadgeVariant[userBook.shelf]}>
               {SHELF_LABELS[userBook.shelf]}
@@ -91,6 +93,10 @@ export function BookCard({ book, userBook, compact = false }: BookCardProps) {
             </span>
           )}
         </div>
+      </div>
+
+      <div className="flex-shrink-0 self-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-muted text-xs">
+        →
       </div>
     </Link>
   );

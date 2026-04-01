@@ -32,7 +32,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" data-theme="parchment" className={`${geist.variable} ${playfair.variable} h-full antialiased`}>
+    <html lang="en" data-theme="parchment" className={`${geist.variable} ${playfair.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         {/* Runs synchronously before paint — prevents theme flash */}
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />

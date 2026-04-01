@@ -42,8 +42,12 @@ export function ShelfSelector({ book, userBook, onUpdate }: ShelfSelectorProps) 
       .from('user_books')
       .upsert({
         user_id: user.id, book_id: book.id, shelf,
-        started_at:  shelf === 'reading' && !current?.started_at  ? now : (current?.started_at ?? null),
-        finished_at: shelf === 'read'    && !current?.finished_at ? now : (current?.finished_at ?? null),
+        started_at:  shelf === 'want_to_read' ? null
+                   : shelf === 'reading' && !current?.started_at ? now
+                   : (current?.started_at ?? null),
+        finished_at: shelf === 'read' && !current?.finished_at ? now
+                   : shelf !== 'read' ? null
+                   : (current?.finished_at ?? null),
       }, { onConflict: 'user_id,book_id' })
       .select().single();
 

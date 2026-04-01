@@ -43,24 +43,6 @@ export function olWorkToBook(work: OLWork, authors: string[]): Book {
   };
 }
 
-const COLLECTION_PATTERNS = [
-  /box\s*set/i,
-  /boxed\s*set/i,
-  /omnibus/i,
-  /complete\s+(series|collection)/i,
-  /\d+[-–]\s*book\s+(set|collection|bundle)/i,
-  /\d+\s*book\s+(set|collection|bundle)/i,
-  /books?\s+\d+[-–]\d+/i,
-  /volumes?\s+\d+[-–]\d+/i,
-  /\d+[-–]volume/i,
-  /bundle/i,
-];
-
-export function isCollectionOrSet(volume: GoogleBooksVolume): boolean {
-  const { title, subtitle } = volume.volumeInfo;
-  const text = [title, subtitle].filter(Boolean).join(' ');
-  return COLLECTION_PATTERNS.some((re) => re.test(text));
-}
 
 export function formatAuthors(authors: string[] | null): string {
   if (!authors || authors.length === 0) return 'Unknown Author';

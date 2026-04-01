@@ -2,10 +2,7 @@ import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { formatAuthors, olWorkToBook } from '@/lib/utils';
 import { BookCover } from '@/components/books/BookCover';
-import { ShelfSelector } from '@/components/books/ShelfSelector';
-import { ReviewForm } from '@/components/books/ReviewForm';
-import { ProgressTracker } from '@/components/books/ProgressTracker';
-import { StarRating } from '@/components/ui/StarRating';
+import { BookActions } from '@/components/books/BookActions';
 import type { UserBook, Book, OLWork } from '@/types';
 
 interface Props { params: Promise<{ id: string }> }
@@ -50,73 +47,64 @@ export default async function BookDetailPage({ params }: Props) {
   const publishYear = book.published_date?.slice(0, 4);
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
-      {/* Book header */}
-      <div className="bg-surface border border-subtle rounded-3xl p-6 shadow-sm shadow-black/5">
-        <div className="flex gap-6">
-          <div className="flex-shrink-0 shadow-xl shadow-black/20 rounded-sm">
-            <BookCover coverUrl={book.cover_url} title={book.title} width={110} height={165} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="font-serif text-2xl font-bold text-primary leading-tight mb-1">
-              {book.title}
-            </h1>
-            <p className="text-secondary text-sm mb-4">{formatAuthors(book.authors)}</p>
+    <div className="max-w-2xl mx-auto">
 
-            <div className="flex flex-wrap gap-2 mb-5">
-              {book.page_count && (
-                <span className="text-xs px-2.5 py-1 bg-surface-hover text-secondary rounded-full border border-subtle">
-                  {book.page_count} pages
-                </span>
-              )}
-              {publishYear && (
-                <span className="text-xs px-2.5 py-1 bg-surface-hover text-secondary rounded-full border border-subtle">
-                  {publishYear}
-                </span>
-              )}
-              {book.categories?.[0] && (
-                <span className="text-xs px-2.5 py-1 bg-accent-soft text-link rounded-full border border-accent-soft">
-                  {book.categories[0]}
-                </span>
-              )}
-              {book.isbn_13 && (
-                <span className="text-xs px-2.5 py-1 bg-surface-hover text-muted rounded-full border border-subtle font-mono">
-                  {book.isbn_13}
-                </span>
-              )}
-            </div>
+      {/* ── Book header ─────────────────────────────── */}
+      <div className="flex gap-7 mb-10 animate-in">
+        <div className="flex-shrink-0" style={{ filter: 'drop-shadow(0 20px 32px rgba(0,0,0,0.22))' }}>
+          <BookCover coverUrl={book.cover_url} title={book.title} width={130} height={195} />
+        </div>
 
-            <ShelfSelector book={book} userBook={userBook} />
+        <div className="flex-1 min-w-0 flex flex-col justify-end pb-1">
+          {book.categories?.[0] && (
+            <p className="text-xs font-semibold text-link tracking-widest uppercase mb-3">
+              {book.categories[0]}
+            </p>
+          )}
+
+          <h1 className="font-serif text-3xl font-bold text-primary leading-tight mb-2">
+            {book.title}
+          </h1>
+
+          <p className="text-base text-secondary italic mb-5">
+            {formatAuthors(book.authors)}
+          </p>
+
+          <div className="flex items-center gap-3 text-xs text-muted mb-6 flex-wrap">
+            {publishYear && <span>{publishYear}</span>}
+            {publishYear && book.page_count && <span className="opacity-30">·</span>}
+            {book.page_count && <span>{book.page_count} pages</span>}
+            {book.isbn_13 && (
+              <>
+                <span className="opacity-30">·</span>
+                <span className="font-mono opacity-70">{book.isbn_13}</span>
+              </>
+            )}
           </div>
+
+          {/* Client component owns userBook state so ReviewForm/ProgressTracker
+              appear immediately after first shelf add without a page reload */}
+          <BookActions book={book} initialUserBook={userBook} />
         </div>
       </div>
 
-      {/* Progress tracker */}
-      {userBook?.shelf === 'reading' && (
-        <ProgressTracker userBook={userBook} pageCount={book.page_count} />
-      )}
+      {/* ── Divider ──────────────────────────────────── */}
+      <div className="flex items-center gap-4 mb-8">
+        <div className="flex-1 h-px" style={{ backgroundColor: 'var(--border)' }} />
+        <span className="font-serif text-muted opacity-40 text-base">✦</span>
+        <div className="flex-1 h-px" style={{ backgroundColor: 'var(--border)' }} />
+      </div>
 
-      {/* Description */}
+      {/* ── Description ──────────────────────────────── */}
       {description && (
-        <section>
-          <h2 className="font-serif text-lg font-semibold text-primary mb-3">About this book</h2>
-          <p className="text-secondary text-sm leading-7">{description}</p>
+        <section className="animate-in delay-1">
+          <h2 className="font-serif text-sm font-semibold text-muted uppercase tracking-widest mb-4">
+            About this book
+          </h2>
+          <p className="text-secondary leading-8 text-[15px]">{description}</p>
         </section>
       )}
 
-      {/* Review */}
-      {userBook && (
-        <section>
-          <h2 className="font-serif text-lg font-semibold text-primary mb-4 flex items-center gap-2">
-            {userBook.rating ? (
-              <>Your review <StarRating value={userBook.rating} readonly size="sm" /></>
-            ) : (
-              'Leave a review'
-            )}
-          </h2>
-          <ReviewForm userBook={userBook} />
-        </section>
-      )}
     </div>
   );
 }

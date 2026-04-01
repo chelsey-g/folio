@@ -9,12 +9,13 @@ import type { Profile } from '@/types';
 export default function EditProfilePage() {
   const router   = useRouter();
   const [profile,  setProfile]  = useState<Profile | null>(null);
-  const [fullName, setFullName] = useState('');
-  const [username, setUsername] = useState('');
-  const [bio,      setBio]      = useState('');
-  const [saving,   setSaving]   = useState(false);
-  const [error,    setError]    = useState('');
-  const [saved,    setSaved]    = useState(false);
+  const [fullName,    setFullName]    = useState('');
+  const [username,    setUsername]    = useState('');
+  const [bio,         setBio]         = useState('');
+  const [readingGoal, setReadingGoal] = useState('');
+  const [saving,      setSaving]      = useState(false);
+  const [error,       setError]       = useState('');
+  const [saved,       setSaved]       = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -27,6 +28,7 @@ export default function EditProfilePage() {
         setFullName(data.full_name ?? '');
         setUsername(data.username ?? '');
         setBio(data.bio ?? '');
+        setReadingGoal(data.reading_goal ? String(data.reading_goal) : '');
       }
     }
     load();
@@ -44,9 +46,10 @@ export default function EditProfilePage() {
     const { error: err } = await supabase
       .from('profiles')
       .update({
-        full_name: fullName.trim() || null,
-        username:  username.trim().toLowerCase(),
-        bio:       bio.trim() || null,
+        full_name:    fullName.trim() || null,
+        username:     username.trim().toLowerCase(),
+        bio:          bio.trim() || null,
+        reading_goal: readingGoal ? parseInt(readingGoal) : null,
       })
       .eq('id', user.id);
 
@@ -134,6 +137,22 @@ export default function EditProfilePage() {
             className="w-full px-3.5 py-2.5 bg-input border border-input rounded-xl text-sm text-primary focus:outline-none focus:ring-2 focus:ring-[var(--link)] focus:border-transparent resize-none placeholder:text-muted"
           />
           <p className="text-xs text-muted text-right">{bio.length}/200</p>
+        </div>
+
+        <div className="space-y-1.5">
+          <label htmlFor="readingGoal" className="text-sm font-semibold text-primary block">
+            {new Date().getFullYear()} reading goal <span className="font-normal text-muted">(optional)</span>
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              id="readingGoal" type="number" min={1} max={9999}
+              value={readingGoal}
+              onChange={(e) => setReadingGoal(e.target.value)}
+              placeholder="52"
+              className="w-28 px-3.5 py-2.5 bg-input border border-input rounded-xl text-sm text-primary focus:outline-none focus:ring-2 focus:ring-[var(--link)] focus:border-transparent placeholder:text-muted"
+            />
+            <span className="text-sm text-muted">books this year</span>
+          </div>
         </div>
 
         <button

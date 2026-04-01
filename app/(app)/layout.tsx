@@ -20,7 +20,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar username={username} />
-      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">{children}</main>
+      {/* Ambient top glow */}
+      <div
+        className="fixed inset-x-0 top-14 h-48 pointer-events-none z-10"
+        style={{ background: 'radial-gradient(ellipse 70% 60% at 50% -10%, var(--accent-bg), transparent)' }}
+      />
+      <main className="relative z-20 flex-1 max-w-5xl mx-auto w-full px-4 py-10">{children}</main>
     </div>
   );
 }

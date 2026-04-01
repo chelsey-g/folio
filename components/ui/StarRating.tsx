@@ -11,7 +11,7 @@ interface StarRatingProps {
 }
 
 const sizeClass = {
-  sm: 'text-sm gap-0',
+  sm: 'text-sm gap-px',
   md: 'text-xl gap-0.5',
   lg: 'text-3xl gap-1',
 };
@@ -33,7 +33,7 @@ export function StarRating({ value, onChange, readonly = false, size = 'md' }: S
           className={cn(
             'leading-none transition-all duration-100',
             readonly ? 'cursor-default' : 'cursor-pointer hover:scale-125',
-            display >= star ? 'text-amber-400' : 'text-stone-200'
+            display >= star ? 'text-amber-400' : 'text-[var(--border-strong)] opacity-60'
           )}
           aria-label={`${star} star${star !== 1 ? 's' : ''}`}
         >
