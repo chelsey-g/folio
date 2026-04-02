@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-**Folio** — A Goodreads-style book tracking app. Users can search books via Google Books API, organize them into three shelves (Want to Read / Currently Reading / Read), rate and review them, and view their reading history.
+**Folio** — A Goodreads-style book tracking app. Users can search books via Open Library API, organize them into three shelves (Want to Read / Currently Reading / Read), rate and review them, and view their reading history.
 
 **Stack:** Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Supabase (Auth + Postgres) · `@supabase/ssr`
 
@@ -28,11 +28,13 @@ app/
 ├── auth/callback/route.ts            # Supabase PKCE code exchange
 ├── (app)/layout.tsx                  # Shared Navbar for all authed routes
 ├── (app)/home                        # Dashboard: reading stats + recent activity
-├── (app)/search                      # Google Books search (client component)
+├── (app)/search                      # Discover: keyword search + vibe search (client component)
 ├── (app)/books/[id]                  # Book detail + ShelfSelector + ReviewForm
 ├── (app)/shelf                       # All shelves grouped by status
 ├── (app)/profile/[username]          # Public user profile
-└── api/books/route.ts                # Proxy to Google Books API (?q= or ?id=)
+├── (app)/stats                       # Private reading stats page
+└── api/books/route.ts                # Proxy to Open Library API (?q= or ?id=)
+└── api/vibe/route.ts                 # Semantic vibe search via OpenAI embeddings
 ```
 
 ### Supabase Setup
@@ -46,27 +48,37 @@ Auth is handled via `proxy.ts` (Next.js 16 renamed `middleware.ts` → `proxy.ts
 ### Database (3 tables)
 
 - **`profiles`** — extends `auth.users`. Auto-created on signup via trigger. Has `username`, `full_name`, `avatar_url`, `bio`.
-- **`books`** — cached Google Books data. Primary key is the Google Books volume ID (string). Upserted when a user adds a book to their shelf.
+- **`books`** — cached Open Library data. Primary key is the Open Library work ID (string, e.g. `OL45804W`). Upserted when a user adds a book to their shelf.
 - **`user_books`** — junction between user and book. Holds `shelf`, `rating`, `review`, `current_page`, `started_at`, `finished_at`. Unique on `(user_id, book_id)`. Uses upsert with `onConflict: 'user_id,book_id'`.
 
 Full schema with RLS policies: `supabase/schema.sql`
 
-### Google Books API
+### Open Library API
 
-- Direct calls to `https://www.googleapis.com/books/v1/volumes` — no API key needed for public search
+- Calls to `https://openlibrary.org/search.json` for search, `/works/{id}.json` for detail
 - All frontend calls go through the `/api/books` proxy route
-- `lib/utils.ts:googleVolumeToBook()` maps the raw API response to our `Book` type
-- Book IDs in our DB are Google Books volume IDs
+- `lib/utils.ts:olSearchDocToBook()` and `olWorkToBook()` map raw OL responses to our `Book` type
+- Book IDs in our DB are Open Library work IDs (e.g. `OL45804W`)
+- Cover images: `https://covers.openlibrary.org/b/id/{cover_i}-M.jpg`
+
+### Vibe Search (`api/vibe/route.ts`)
+
+- POST with `{ query: string }` — requires auth (guards OpenAI spend)
+- Extracts keywords from natural-language query, fetches 40 OL candidates
+- Embeds all texts via `lib/embeddings.ts` (OpenAI `text-embedding-3-small`) in one batch call
+- Ranks by cosine similarity, returns top 10 with `score` and `matchedSubjects`
+- Requires `OPENAI_API_KEY` env var
 
 ### Key Types (`types/index.ts`)
 
-`ShelfType`, `Book`, `UserBook`, `Profile`, `GoogleBooksVolume`, `SHELF_LABELS` map
+`ShelfType`, `Book`, `UserBook`, `Profile`, `OLSearchDoc`, `OLSearchResponse`, `OLWork`, `SHELF_LABELS` map
 
 ### Environment Variables
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+OPENAI_API_KEY=          # Required for vibe search
 ```
 
 ---
