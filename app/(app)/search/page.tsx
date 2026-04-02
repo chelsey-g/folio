@@ -54,6 +54,7 @@ export default function SearchPage() {
   const [loading,     setLoading]     = useState(false);
   const [searched,    setSearched]    = useState(false);
   const [activeQuery, setActiveQuery] = useState('');
+  const [error,       setError]       = useState<string | null>(null);
   const [categories,  setCategories]  = useState<CategoryRow[]>([]);
   const [catsLoading, setCatsLoading] = useState(true);
   const requestIdRef = useState(() => ({ current: 0 }))[0];
@@ -94,6 +95,7 @@ export default function SearchPage() {
     const id = ++requestIdRef.current;
     setLoading(true);
     setSearched(true);
+    setError(null);
     setActiveQuery(q.trim());
     try {
       const res = await fetch('/api/vibe', {
@@ -102,11 +104,19 @@ export default function SearchPage() {
         body: JSON.stringify({ query: q.trim() }),
       });
       if (id !== requestIdRef.current) return;
-      if (!res.ok) { setVibeResults([]); return; }
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error ?? 'Something went wrong. Please try again.');
+        setVibeResults([]);
+        return;
+      }
       const data: { items: VibeBook[] } = await res.json();
       setVibeResults(data.items ?? []);
     } catch {
-      if (id === requestIdRef.current) setVibeResults([]);
+      if (id === requestIdRef.current) {
+        setError('Could not connect. Please try again.');
+        setVibeResults([]);
+      }
     } finally {
       if (id === requestIdRef.current) setLoading(false);
     }
@@ -122,6 +132,7 @@ export default function SearchPage() {
     setSearched(false);
     setResults([]);
     setVibeResults([]);
+    setError(null);
     setQuery('');
   }
 
@@ -226,8 +237,16 @@ export default function SearchPage() {
         </div>
       )}
 
+      {/* ── Error ── */}
+      {!loading && error && (
+        <div className="text-center py-16">
+          <p className="text-3xl mb-3 opacity-40">⚠</p>
+          <p className="text-secondary text-sm">{error}</p>
+        </div>
+      )}
+
       {/* ── No results ── */}
-      {!loading && searched && !hasResults && (
+      {!loading && searched && !error && !hasResults && (
         <div className="text-center py-16">
           <p className="text-3xl mb-3 opacity-40">◎</p>
           <p className="text-secondary text-sm">No results for &ldquo;{activeQuery}&rdquo;</p>
