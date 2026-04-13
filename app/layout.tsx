@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist } from 'next/font/google';
 import { Playfair_Display } from 'next/font/google';
+import Script from 'next/script';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import './globals.css';
 
@@ -35,7 +36,7 @@ export default function RootLayout({
     <html lang="en" data-theme="parchment" className={`${geist.variable} ${playfair.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         {/* Runs synchronously before paint — prevents theme flash */}
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <Script id="theme-init" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-full">
         <ThemeProvider>{children}</ThemeProvider>

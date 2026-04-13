@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { formatAuthors, olWorkToBook } from '@/lib/utils';
 import { BookCover } from '@/components/books/BookCover';
@@ -52,7 +53,7 @@ export default async function BookDetailPage({ params }: Props) {
       {/* ── Book header ─────────────────────────────── */}
       <div className="flex gap-7 mb-10 animate-in">
         <div className="flex-shrink-0" style={{ filter: 'drop-shadow(0 20px 32px rgba(0,0,0,0.22))' }}>
-          <BookCover coverUrl={book.cover_url} title={book.title} width={130} height={195} />
+          <BookCover coverUrl={book.cover_url} title={book.title} author={book.authors?.[0]} isbn={book.isbn_13} width={130} height={195} />
         </div>
 
         <div className="flex-1 min-w-0 flex flex-col justify-end pb-1">
@@ -104,6 +105,18 @@ export default async function BookDetailPage({ params }: Props) {
           <p className="text-secondary leading-8 text-[15px]">{description}</p>
         </section>
       )}
+
+      {/* ── Find similar ─────────────────────────────── */}
+      <div className={description ? 'mt-10' : ''}>
+        <Link
+          href={`/search?mode=vibe&vibe=${encodeURIComponent(`Books similar to "${book.title}" by ${formatAuthors(book.authors)}`)}`}
+          className="flex items-center gap-2 text-sm text-muted hover:text-link transition-colors group"
+        >
+          <span className="text-xs opacity-60 group-hover:opacity-100 transition-opacity">✦</span>
+          Find books like this one
+          <span className="opacity-40 group-hover:opacity-100 transition-opacity">→</span>
+        </Link>
+      </div>
 
     </div>
   );

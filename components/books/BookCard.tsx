@@ -52,6 +52,8 @@ export function BookCard({ book, userBook, compact = false }: BookCardProps) {
         <BookCover
           coverUrl={book.cover_url}
           title={book.title}
+          author={book.authors?.[0]}
+          isbn={book.isbn_13}
           width={compact ? 44 : 60}
           height={compact ? 66 : 90}
         />

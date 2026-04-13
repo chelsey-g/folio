@@ -65,6 +65,19 @@ export interface OLWork {
   authors?: Array<{ author: { key: string } }>;
 }
 
+export interface MoodFilters {
+  tone:   'dark' | 'light' | null;
+  pace:   'fast' | 'slow'  | null;
+  length: 'short' | 'long' | null;
+}
+
+export interface SavedVibe {
+  id:         string;
+  query:      string;
+  moods:      MoodFilters;
+  created_at: string;
+}
+
 // Shelf label map
 export const SHELF_LABELS: Record<ShelfType, string> = {
   want_to_read: 'Want to Read',

@@ -98,35 +98,105 @@ export default async function LandingPage() {
           </div>
           {/* Shelf plank */}
           <div className="h-2 rounded-sm w-full" style={{ backgroundColor: 'var(--border-strong)' }} />
-          {/* Shelf shadow */}
           <div className="h-px w-full mt-0.5 opacity-30" style={{ backgroundColor: 'var(--border-strong)' }} />
         </div>
       </section>
 
-      {/* ── Features ──────────────────────────────────── */}
+      {/* ── Vibe Search callout ───────────────────────── */}
       <section className="border-t mt-16" style={{ borderColor: 'var(--border)' }}>
-        <div className="max-w-4xl mx-auto px-6 py-16 grid sm:grid-cols-3 gap-px bg-[var(--border)]">
+        <div className="max-w-4xl mx-auto px-6 py-16 flex flex-col sm:flex-row items-center gap-10">
+          {/* Text */}
+          <div className="flex-1 max-w-sm">
+            <p className="text-xs font-semibold text-link tracking-[0.18em] uppercase mb-4">✦ Vibe Search</p>
+            <h2 className="font-serif text-3xl font-bold text-primary leading-tight mb-4">
+              Find your next read by feeling, not title.
+            </h2>
+            <p className="text-secondary text-sm leading-relaxed">
+              Describe the mood you&apos;re after — &ldquo;a quiet novel about grief in Scandinavia&rdquo; or
+              &ldquo;fast-paced thriller with an unreliable narrator&rdquo; — and get ten
+              handpicked recommendations from AI that knows your taste.
+            </p>
+          </div>
+
+          {/* Mock vibe card */}
+          <div className="flex-1 w-full max-w-sm">
+            <div className="bg-surface border border-subtle rounded-2xl p-4 shadow-md shadow-black/8 space-y-3">
+              {/* Mock search bar */}
+              <div className="flex items-center gap-2 px-3 py-2 bg-input border border-input rounded-xl text-sm text-muted">
+                <span className="text-xs opacity-60">✦</span>
+                <span className="truncate">slow-burn literary fiction set in rural Japan</span>
+              </div>
+              {/* Mock results */}
+              {[
+                { title: 'The Sound of Waves', author: 'Yukio Mishima', genre: 'Literary Fiction' },
+                { title: 'A Wild Sheep Chase', author: 'Haruki Murakami', genre: 'Magical Realism' },
+                { title: 'Snow Country',       author: 'Yasunari Kawabata', genre: 'Literary Fiction' },
+              ].map((b, i) => (
+                <div key={b.title} className="flex items-center gap-3 p-2 rounded-xl hover:bg-surface-hover transition-colors">
+                  <span className="text-xs text-muted tabular-nums w-4 shrink-0">{i + 1}</span>
+                  <div
+                    className="w-8 h-12 rounded-sm shrink-0 opacity-80"
+                    style={{ background: ['#C4A882', '#6B5344', '#1A1614'][i] }}
+                  />
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-primary line-clamp-1">{b.title}</p>
+                    <p className="text-xs text-muted italic">{b.author}</p>
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 bg-accent-soft text-link rounded-full border border-[var(--link)]/20 mt-0.5 inline-block">
+                      {b.genre}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Features ──────────────────────────────────── */}
+      <section className="border-t" style={{ borderColor: 'var(--border)' }}>
+        <div className="max-w-4xl mx-auto px-6 py-16 grid sm:grid-cols-2 lg:grid-cols-4 gap-px bg-[var(--border)]">
           {[
             {
               n: '01',
               title: 'Three shelves',
-              body:  'Want to Read, Currently Reading, and Read — always know exactly where you are.',
+              body:  'Want to Read, Currently Reading, and Read — always know exactly where you are with every book.',
             },
             {
               n: '02',
               title: 'Track progress',
-              body:  'Log your current page and watch your progress bar fill up as you read.',
+              body:  'Log your current page from the home screen and watch your progress bar fill up in real time.',
             },
             {
               n: '03',
               title: 'Rate & review',
-              body:  'Leave star ratings and written reviews — build a permanent record of everything read.',
+              body:  'Leave star ratings and written reviews — build a permanent record of everything you&apos;ve read.',
+            },
+            {
+              n: '04',
+              title: 'Vibe Search',
+              body:  'Describe a feeling, not a title. AI recommends books tailored to your taste and reading history.',
             },
           ].map(({ n, title, body }) => (
             <div key={n} className="flex flex-col gap-4 p-8" style={{ backgroundColor: 'var(--bg)' }}>
               <span className="font-serif text-4xl font-bold opacity-10 text-primary leading-none">{n}</span>
               <h3 className="font-serif font-semibold text-primary text-lg leading-snug">{title}</h3>
-              <p className="text-sm text-secondary leading-relaxed">{body}</p>
+              <p className="text-sm text-secondary leading-relaxed" dangerouslySetInnerHTML={{ __html: body }} />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Stats strip ───────────────────────────────── */}
+      <section className="border-t" style={{ borderColor: 'var(--border)' }}>
+        <div className="max-w-4xl mx-auto px-6 py-12 grid grid-cols-3 gap-8 text-center">
+          {[
+            { value: 'Free',     label: 'Always' },
+            { value: 'No ads',   label: 'Ever' },
+            { value: 'Just',     label: 'books' },
+          ].map(({ value, label }) => (
+            <div key={label}>
+              <p className="font-serif text-3xl font-bold text-primary">{value}</p>
+              <p className="text-sm text-muted mt-1">{label}</p>
             </div>
           ))}
         </div>

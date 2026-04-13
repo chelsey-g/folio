@@ -10,6 +10,7 @@ create table if not exists public.profiles (
   full_name text,
   avatar_url text,
   bio text,
+  reading_goal int,
   created_at timestamptz default now() not null
 );
 
@@ -75,6 +76,23 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- Saved Vibes (user-saved vibe searches)
+create table if not exists public.saved_vibes (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  query text not null,
+  moods jsonb not null default '{"tone":null,"pace":null,"length":null}',
+  created_at timestamptz default now() not null
+);
+
+-- Vibe Cache (server-side cache of Claude results to avoid repeated API calls)
+create table if not exists public.vibe_cache (
+  cache_key text primary key,  -- SHA-256 of query+moods
+  items jsonb not null,
+  created_at timestamptz default now() not null,
+  expires_at timestamptz not null
+);
+
 -- ============================================================
 -- Row Level Security
 -- ============================================================
@@ -117,3 +135,32 @@ create policy "Users can update their own books"
 create policy "Users can delete their own books"
   on public.user_books for delete
   to authenticated using (auth.uid() = user_id);
+
+alter table public.saved_vibes enable row level security;
+alter table public.vibe_cache enable row level security;
+
+-- Saved vibes: users manage their own only
+create policy "Users can view their own saved vibes"
+  on public.saved_vibes for select
+  to authenticated using (auth.uid() = user_id);
+
+create policy "Users can insert their own saved vibes"
+  on public.saved_vibes for insert
+  to authenticated with check (auth.uid() = user_id);
+
+create policy "Users can delete their own saved vibes"
+  on public.saved_vibes for delete
+  to authenticated using (auth.uid() = user_id);
+
+-- Vibe cache: any authenticated user can read/write (shared cache)
+create policy "Authenticated users can read vibe cache"
+  on public.vibe_cache for select
+  to authenticated using (true);
+
+create policy "Authenticated users can insert vibe cache"
+  on public.vibe_cache for insert
+  to authenticated with check (true);
+
+create policy "Authenticated users can update vibe cache"
+  on public.vibe_cache for update
+  to authenticated using (true);

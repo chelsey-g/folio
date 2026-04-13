@@ -187,6 +187,8 @@ export default async function StatsPage() {
                   <BookCover
                     coverUrl={ub.book.cover_url}
                     title={ub.book.title}
+                    author={ub.book.authors?.[0]}
+                    isbn={ub.book.isbn_13}
                     width={80}
                     height={120}
                     className="w-full"
@@ -238,6 +240,8 @@ export default async function StatsPage() {
                     <BookCover
                       coverUrl={longest.book.cover_url}
                       title={longest.book.title}
+                      author={longest.book.authors?.[0]}
+                      isbn={longest.book.isbn_13}
                       width={44}
                       height={66}
                     />

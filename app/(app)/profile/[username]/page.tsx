@@ -159,6 +159,8 @@ export default async function ProfilePage({ params }: Props) {
                   <BookCover
                     coverUrl={ub.book.cover_url}
                     title={ub.book.title}
+                    author={ub.book.authors?.[0]}
+                    isbn={ub.book.isbn_13}
                     width={80}
                     height={120}
                     className="w-full"

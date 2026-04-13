@@ -139,6 +139,8 @@ export function ShelfView({ userBooks }: ShelfViewProps) {
                   <BookCover
                     coverUrl={ub.book.cover_url}
                     title={ub.book.title}
+                    author={ub.book.authors?.[0]}
+                    isbn={ub.book.isbn_13}
                     width={96}
                     height={144}
                     className="w-full"

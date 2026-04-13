@@ -61,13 +61,27 @@ Full schema with RLS policies: `supabase/schema.sql`
 - Book IDs in our DB are Open Library work IDs (e.g. `OL45804W`)
 - Cover images: `https://covers.openlibrary.org/b/id/{cover_i}-M.jpg`
 
+### Cover Images (3-step fallback chain)
+
+Server-side (API routes, page.tsx): OL `cover_i` → `lib/bookcover.ts:fetchLongitoodCover()`
+Client-side (BookCover component): OL cover → `/api/cover` proxy (longitood) → gradient placeholder
+
+**Rules:**
+- Never skip longitood and go straight to gradient — always try longitood first
+- `BookCover` uses `useRef` (not `useState`) for the `triedLongitood` flag — `useState` causes stale closures in async `onError` handlers
+- `fetchLongitoodCover` rejects any URL containing `no-cover` (longitood's placeholder)
+- All `<Image>` in `BookCover` use `unoptimized` prop to avoid Next.js image optimizer proxy issues
+
 ### Vibe Search (`api/vibe/route.ts`)
 
-- POST with `{ query: string }` — requires auth (guards OpenAI spend)
-- Extracts keywords from natural-language query, fetches 40 OL candidates
-- Embeds all texts via `lib/embeddings.ts` (OpenAI `text-embedding-3-small`) in one batch call
-- Ranks by cosine similarity, returns top 10 with `score` and `matchedSubjects`
-- Requires `OPENAI_API_KEY` env var
+- POST with `{ query, moods?, exclude?, refinement? }` — requires auth (guards AI spend)
+- Calls Claude Haiku directly; prompt includes user's shelf context (top-rated + recently-read)
+- Validates all suggestions against Open Library (word-overlap title matching, 60% threshold)
+- Skips books already on user's shelf or in the `exclude` list
+- Caches results in `vibe_cache` Supabase table (1hr TTL), keyed by SHA-256(query+moods)
+- Refinement and exclude bypass the cache
+- Saved searches stored in `saved_vibes` table, managed via `/api/vibe/saved`
+- Requires `ANTHROPIC_API_KEY` env var (NOT OpenAI)
 
 ### Key Types (`types/index.ts`)
 
@@ -78,8 +92,16 @@ Full schema with RLS policies: `supabase/schema.sql`
 ```
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
-OPENAI_API_KEY=          # Required for vibe search
+ANTHROPIC_API_KEY=       # Required for vibe search (claude-haiku-4-5-20251001)
 ```
+
+### Database Tables
+
+- **`profiles`** — one per user, auto-created on signup
+- **`books`** — cached OL data, PK is Open Library work ID (e.g. `OL45804W`)
+- **`user_books`** — shelf + progress + review, unique on `(user_id, book_id)`
+- **`saved_vibes`** — user-saved vibe searches with moods JSON
+- **`vibe_cache`** — shared 1hr cache of Claude vibe results, keyed by SHA-256
 
 ---
 
