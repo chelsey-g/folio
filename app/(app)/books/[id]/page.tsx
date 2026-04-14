@@ -51,19 +51,20 @@ export default async function BookDetailPage({ params }: Props) {
     <div className="max-w-2xl mx-auto">
 
       {/* ── Book header ─────────────────────────────── */}
-      <div className="flex gap-7 mb-10 animate-in">
-        <div className="flex-shrink-0" style={{ filter: 'drop-shadow(0 20px 32px rgba(0,0,0,0.22))' }}>
+      <div className="flex flex-col sm:flex-row gap-6 sm:gap-7 mb-10 animate-in">
+        {/* Cover — centered on mobile, left-aligned on sm+ */}
+        <div className="flex sm:block justify-center flex-shrink-0" style={{ filter: 'drop-shadow(0 20px 32px rgba(0,0,0,0.22))' }}>
           <BookCover coverUrl={book.cover_url} title={book.title} author={book.authors?.[0]} isbn={book.isbn_13} width={130} height={195} />
         </div>
 
-        <div className="flex-1 min-w-0 flex flex-col justify-end pb-1">
+        <div className="flex-1 min-w-0 flex flex-col sm:justify-end pb-1">
           {book.categories?.[0] && (
             <p className="text-xs font-semibold text-link tracking-widest uppercase mb-3">
               {book.categories[0]}
             </p>
           )}
 
-          <h1 className="font-serif text-3xl font-bold text-primary leading-tight mb-2">
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-primary leading-tight mb-2">
             {book.title}
           </h1>
 

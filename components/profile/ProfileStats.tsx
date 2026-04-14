@@ -14,7 +14,7 @@ export function ProfileStats({ booksRead, booksReading, wantToRead, avgRating }:
   ];
 
   return (
-    <div className="grid grid-cols-4 divide-x divide-[var(--border)]">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-4 sm:gap-y-0 sm:divide-x divide-[var(--border)]">
       {stats.map(({ value, label, suffix = '' }) => (
         <div key={label} className="text-center px-3 first:pl-0 last:pr-0">
           <p className="text-2xl font-bold text-primary tabular-nums leading-none">

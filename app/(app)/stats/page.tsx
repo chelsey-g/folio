@@ -98,18 +98,18 @@ export default async function StatsPage() {
       </div>
 
       {/* Hero numbers */}
-      <div className="grid grid-cols-3 gap-3 animate-in delay-1">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 animate-in delay-1">
         {[
           { value: readYear.length, label: `Books in ${year}`,   sub: `${readAll.length} all time` },
           { value: totalPages > 0 ? totalPages.toLocaleString() : '—', label: 'Pages read', sub: 'all time' },
           { value: avgRating ? avgRating.toFixed(1) : '—', label: 'Avg rating', sub: `${rated.length} rated`, suffix: avgRating ? ' ★' : '' },
         ].map(({ value, label, sub, suffix = '' }) => (
-          <div key={label} className="bg-surface border border-subtle rounded-2xl p-5 shadow-sm shadow-black/5 text-center">
-            <p className="text-3xl font-bold text-primary tabular-nums leading-none">
+          <div key={label} className="bg-surface border border-subtle rounded-2xl p-5 shadow-sm shadow-black/5 flex sm:flex-col items-center sm:items-center justify-between sm:justify-start gap-2 sm:gap-0 sm:text-center">
+            <p className="text-xs font-semibold text-primary sm:mb-2 sm:mt-0 order-2 sm:order-2">{label}</p>
+            <p className="text-3xl font-bold text-primary tabular-nums leading-none order-1 sm:order-1">
               {value}<span className="text-xl text-link">{suffix}</span>
             </p>
-            <p className="text-xs font-semibold text-primary mt-2">{label}</p>
-            <p className="text-xs text-muted mt-0.5">{sub}</p>
+            <p className="text-xs text-muted sm:mt-0.5 order-3 hidden sm:block">{sub}</p>
           </div>
         ))}
       </div>
