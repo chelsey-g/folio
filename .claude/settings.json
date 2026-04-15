@@ -1,0 +1,45 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // empty' | grep -qE '\\.(ts|tsx)$' && cd /Users/chelseygowac/Documents/folio && npx tsc --noEmit 2>&1 | grep -v '^npm notice' | grep -v '^$' | head -20 || true",
+            "timeout": 30,
+            "statusMessage": "Type-checking…"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Funk.aiff 2>/dev/null || true",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Glass.aiff 2>/dev/null || true",
+            "async": true
+          },
+          {
+            "type": "agent",
+            "prompt": "Check which TypeScript (.ts or .tsx) files in /Users/chelseygowac/Documents/folio were written or edited during this session by running: git -C /Users/chelseygowac/Documents/folio diff --name-only HEAD 2>/dev/null. If any .ts or .tsx files appear in the output, review them for bugs, logic errors, and security issues — report only high-confidence findings. If no TypeScript files changed, output nothing.",
+            "timeout": 120,
+            "statusMessage": "Reviewing code…"
+          }
+        ]
+      }
+    ]
+  }
+}

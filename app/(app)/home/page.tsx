@@ -5,7 +5,8 @@ import { BookCard } from '@/components/books/BookCard';
 import { CurrentlyReadingCard } from '@/components/books/CurrentlyReadingCard';
 import { ProfileStats } from '@/components/profile/ProfileStats';
 import { ReadingGoal } from '@/components/profile/ReadingGoal';
-import type { UserBook } from '@/types';
+import { AgentNotification } from '@/components/home/AgentNotification';
+import type { UserBook, Book } from '@/types';
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -19,11 +20,34 @@ export default async function HomePage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [{ data: profile }, { data: userBooks }] = await Promise.all([
+  const [{ data: profile }, { data: userBooks }, { data: rawNotif }] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).single(),
     supabase.from('user_books').select('*, book:books(*)')
       .eq('user_id', user.id).order('updated_at', { ascending: false }).limit(100),
+    supabase.from('notifications')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('dismissed', false)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
+
+  // Fetch the recommended book for the notification (if any)
+  let notifBook: Book | null = null;
+  let finishedBookTitle = '';
+  if (rawNotif) {
+    const [{ data: recBook }, { data: finBook }] = await Promise.all([
+      rawNotif.recommended_book_id
+        ? supabase.from('books').select('*').eq('id', rawNotif.recommended_book_id).single()
+        : Promise.resolve({ data: null }),
+      rawNotif.finished_book_id
+        ? supabase.from('books').select('title').eq('id', rawNotif.finished_book_id).single()
+        : Promise.resolve({ data: null }),
+    ]);
+    notifBook = recBook as Book | null;
+    finishedBookTitle = (finBook as { title: string } | null)?.title ?? '';
+  }
 
   const books      = (userBooks ?? []) as UserBook[];
   const reading    = books.filter((b) => b.shelf === 'reading');
@@ -50,6 +74,15 @@ export default async function HomePage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
+
+      {/* ── Agent notification ─────────────────────── */}
+      {rawNotif && (
+        <AgentNotification
+          notification={rawNotif}
+          recommendedBook={notifBook}
+          finishedBookTitle={finishedBookTitle}
+        />
+      )}
 
       {/* ── Header ─────────────────────────────────── */}
       <section className="animate-in">
