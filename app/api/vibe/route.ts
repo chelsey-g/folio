@@ -21,27 +21,37 @@ function normalizeTitle(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
 }
 
-/** Word-overlap: 60%+ of the suggested title's words appear in the found title */
+/** Word-overlap: 40%+ of the suggested title's words appear in the found title */
 function titlesMatch(suggested: string, found: string): boolean {
   const a = normalizeTitle(suggested).split(/\s+/).filter(Boolean);
   const b = new Set(normalizeTitle(found).split(/\s+/).filter(Boolean));
   if (a.length === 0) return false;
-  return a.filter((w) => b.has(w)).length / a.length >= 0.6;
+  return a.filter((w) => b.has(w)).length / a.length >= 0.4;
+}
+
+async function searchOL(q: string): Promise<OLSearchDoc[]> {
+  try {
+    const url = new URL('https://openlibrary.org/search.json');
+    url.searchParams.set('q', q);
+    url.searchParams.set('fields', 'key,title,author_name,cover_i,first_publish_year,number_of_pages_median,subject,isbn');
+    url.searchParams.set('limit', '5');
+    const res = await fetch(url.toString(), { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return [];
+    const data: OLSearchResponse = await res.json();
+    return data.docs ?? [];
+  } catch {
+    return [];
+  }
 }
 
 async function lookupOnOL(book: LLMBook): Promise<OLSearchDoc | null> {
-  try {
-    const url = new URL('https://openlibrary.org/search.json');
-    url.searchParams.set('q', `${book.title} ${book.author}`);
-    url.searchParams.set('fields', 'key,title,author_name,cover_i,first_publish_year,number_of_pages_median,subject,isbn');
-    url.searchParams.set('limit', '3');
-    const res = await fetch(url.toString(), { signal: AbortSignal.timeout(6000) });
-    if (!res.ok) return null;
-    const data: OLSearchResponse = await res.json();
-    return (data.docs ?? []).find((doc) => titlesMatch(book.title, doc.title)) ?? null;
-  } catch {
-    return null;
-  }
+  // Try title + author first
+  const docs = await searchOL(`${book.title} ${book.author}`);
+  const match = docs.find((doc) => titlesMatch(book.title, doc.title));
+  if (match) return match;
+  // Fallback: title only
+  const titleDocs = await searchOL(book.title);
+  return titleDocs.find((doc) => titlesMatch(book.title, doc.title)) ?? null;
 }
 
 // ── Cache key ─────────────────────────────────────────────────────────────────
@@ -162,8 +172,8 @@ async function callClaude(apiKey: string, prompt: string): Promise<LLMBook[]> {
 // ── Route handler ─────────────────────────────────────────────────────────────
 export async function POST(request: Request) {
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json().catch(() => null);
   const query: string = body?.query?.trim() ?? '';
@@ -196,7 +206,7 @@ export async function POST(request: Request) {
 
   // ── Shelf context — best-effort ───────────────────────────────────────────
   let shelfCtx: ShelfContext = { topRated: [], recentlyRead: [], allTitles: new Set() };
-  try { shelfCtx = await getUserShelfContext(session.user.id); } catch { /* continue */ }
+  try { shelfCtx = await getUserShelfContext(user.id); } catch { /* continue */ }
   const shelfBlock = buildShelfBlock(shelfCtx);
   const moodBlock = buildMoodBlock(moods);
 
