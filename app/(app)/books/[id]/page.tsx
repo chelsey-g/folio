@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { formatAuthors, olWorkToBook } from '@/lib/utils';
 import { BookCover } from '@/components/books/BookCover';
 import { BookActions } from '@/components/books/BookActions';
+import { SimilarBooks } from '@/components/books/SimilarBooks';
 import type { UserBook, Book, OLWork } from '@/types';
 
 interface Props { params: Promise<{ id: string }> }
@@ -107,8 +108,17 @@ export default async function BookDetailPage({ params }: Props) {
         </section>
       )}
 
-      {/* ── Find similar ─────────────────────────────── */}
-      <div className={description ? 'mt-10' : ''}>
+      {/* ── Similar books (vector search) ────────────── */}
+      <SimilarBooks
+        bookId={book.id}
+        title={book.title}
+        authors={book.authors}
+        categories={book.categories}
+        description={book.description}
+      />
+
+      {/* ── Find similar (vibe search fallback) ──────── */}
+      <div className="mt-10">
         <Link
           href={`/search?mode=vibe&vibe=${encodeURIComponent(`Books similar to "${book.title}" by ${formatAuthors(book.authors)}`)}`}
           className="flex items-center gap-2 text-sm text-muted hover:text-link transition-colors group"
