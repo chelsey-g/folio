@@ -85,8 +85,8 @@ export function BookCover({ coverUrl, title, author, isbn, width = 80, height = 
       alt={`Cover of ${title}`}
       width={width}
       height={height}
-      style={{ width: `${width}px`, height: 'auto' }}
-      className={cn('rounded-sm object-cover', className)}
+      style={{ height: 'auto' }}
+      className={cn('rounded-sm', className)}
       onError={handleError}
       unoptimized
     />

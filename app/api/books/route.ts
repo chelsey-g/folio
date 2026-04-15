@@ -53,9 +53,8 @@ export async function GET(request: Request) {
   url.searchParams.set('fields', 'key,title,author_name,cover_i,first_publish_year,number_of_pages_median,subject,isbn');
   url.searchParams.set('limit', '20');
 
-  const res = await fetch(url.toString(), {
-    signal: AbortSignal.timeout(8000),
-  }).catch(() => null);
+  let res = await fetch(url.toString(), { signal: AbortSignal.timeout(10000) }).catch(() => null);
+  if (!res?.ok) res = await fetch(url.toString(), { signal: AbortSignal.timeout(10000) }).catch(() => null);
   if (!res?.ok) return NextResponse.json({ error: 'Open Library API error' }, { status: 502 });
 
   const data: OLSearchResponse = await res.json();
