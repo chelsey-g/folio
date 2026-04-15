@@ -169,6 +169,20 @@ async function callClaude(apiKey: string, prompt: string): Promise<LLMBook[]> {
   return books as LLMBook[];
 }
 
+// ── NDJSON stream helper ──────────────────────────────────────────────────────
+function ndjsonStream(items: VibeResult[]): Response {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    start(controller) {
+      for (const item of items) {
+        controller.enqueue(encoder.encode(JSON.stringify(item) + '\n'));
+      }
+      controller.close();
+    },
+  });
+  return new Response(stream, { headers: { 'Content-Type': 'application/x-ndjson' } });
+}
+
 // ── Route handler ─────────────────────────────────────────────────────────────
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -200,7 +214,7 @@ export async function POST(request: Request) {
       .eq('cache_key', cacheKey)
       .single();
     if (cached && new Date(cached.expires_at) > new Date()) {
-      return NextResponse.json({ items: cached.items, cached: true });
+      return ndjsonStream(cached.items as VibeResult[]);
     }
   }
 
@@ -232,38 +246,51 @@ genres: 2–3 short clean tags (e.g. "Literary Fiction", "Dark Humour", "Psychol
     return NextResponse.json({ error: 'Could not generate recommendations. Please try again.' }, { status: 503 });
   }
 
-  // ── Step 2: Validate against Open Library (parallel) ─────────────────────
-  const docs = await Promise.all(suggestions.slice(0, 25).map(lookupOnOL));
+  // ── Step 2: Stream results as each OL lookup + cover fetch completes ──────
+  const encoder = new TextEncoder();
+  const collectedItems: VibeResult[] = [];
 
-  // ── Step 3: Build book objects, skip excluded/shelf books ─────────────────
-  const validated: Array<{ book: Book; reason: string; genres: string[] }> = [];
-  docs.forEach((doc, i) => {
-    if (!doc || validated.length >= 10) return;
-    const book = olSearchDocToBook(doc);
-    if (allExcludeTitles.has(normalizeTitle(book.title))) return;
-    validated.push({ book, reason: suggestions[i]?.reason ?? '', genres: suggestions[i]?.genres ?? [] });
+  const stream = new ReadableStream({
+    async start(controller) {
+      const tasks = suggestions.slice(0, 25).map(async (suggestion) => {
+        const doc = await lookupOnOL(suggestion);
+        if (!doc) return;
+
+        const book = olSearchDocToBook(doc);
+        if (allExcludeTitles.has(normalizeTitle(book.title))) return;
+        if (collectedItems.length >= 10) return;
+
+        let cover_url = book.cover_url;
+        if (!cover_url) {
+          cover_url = await fetchLongitoodCover(book.title, book.authors?.[0] ?? null, book.isbn_13);
+        }
+
+        // Re-check limit after the async cover fetch (no await between check and push)
+        if (collectedItems.length >= 10) return;
+        const item: VibeResult = {
+          ...book,
+          cover_url,
+          reason: suggestion.reason ?? '',
+          genres: suggestion.genres ?? [],
+        };
+        collectedItems.push(item);
+        controller.enqueue(encoder.encode(JSON.stringify(item) + '\n'));
+      });
+
+      await Promise.allSettled(tasks);
+
+      // Write to cache (fire-and-forget)
+      if (!refinement && exclude.length === 0 && collectedItems.length > 0) {
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+        supabase.from('vibe_cache').upsert(
+          { cache_key: cacheKey, items: collectedItems, expires_at: expiresAt },
+          { onConflict: 'cache_key' },
+        ).then(() => {});
+      }
+
+      controller.close();
+    },
   });
 
-  // ── Step 4: Fill missing covers via longitood (parallel) ──────────────────
-  const items: VibeResult[] = await Promise.all(
-    validated.map(async ({ book, reason, genres }) => {
-      let cover_url = book.cover_url;
-      if (!cover_url) {
-        cover_url = await fetchLongitoodCover(book.title, book.authors?.[0] ?? null, book.isbn_13);
-      }
-      return { ...book, cover_url, reason, genres } satisfies VibeResult;
-    })
-  );
-
-  // ── Step 5: Write to cache (skip if refinement or exclude) ────────────────
-  if (!refinement && exclude.length === 0 && items.length > 0) {
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour TTL
-    await supabase.from('vibe_cache').upsert({
-      cache_key: cacheKey,
-      items,
-      expires_at: expiresAt,
-    }, { onConflict: 'cache_key' }).then(() => {});
-  }
-
-  return NextResponse.json({ items });
+  return new Response(stream, { headers: { 'Content-Type': 'application/x-ndjson' } });
 }

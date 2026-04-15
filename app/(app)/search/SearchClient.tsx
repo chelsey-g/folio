@@ -75,6 +75,7 @@ export function SearchClient({ initialCategories }: SearchClientProps) {
   const [copyMsg,       setCopyMsg]       = useState<string | null>(null);
   const [page,          setPage]          = useState(0); // used for load more
   const [excludedIds,   setExcludedIds]   = useState<string[]>([]);
+  const [streaming,     setStreaming]     = useState(false);
   const requestIdRef = useRef(0);
 
   useEffect(() => { setPrompts(shuffled(VIBE_PROMPTS)); }, []);
@@ -128,6 +129,7 @@ export function SearchClient({ initialCategories }: SearchClientProps) {
     if (!q.trim()) return;
     const id = ++requestIdRef.current;
     setLoading(true);
+    setStreaming(false);
     if (!append) {
       setSearched(true);
       setError(null);
@@ -148,14 +150,40 @@ export function SearchClient({ initialCategories }: SearchClientProps) {
         if (!append) setVibeResults([]);
         return;
       }
-      const data: { items: VibeBook[] } = await res.json();
-      const newItems = data.items ?? [];
-      if (append) {
-        setVibeResults((prev) => [...prev, ...newItems]);
-        setExcludedIds((prev) => [...prev, ...newItems.map((b) => b.id)]);
-      } else {
-        setVibeResults(newItems);
-        setExcludedIds(newItems.map((b) => b.id));
+      if (!res.body) {
+        setError('No response from server.');
+        return;
+      }
+
+      // Read NDJSON stream — each line is one book
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let firstItem = true;
+
+      while (true) {
+        if (id !== requestIdRef.current) { reader.cancel(); return; }
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          try {
+            const item = JSON.parse(trimmed) as VibeBook;
+            if (firstItem) {
+              firstItem = false;
+              setLoading(false);
+              setStreaming(true);
+            }
+            setVibeResults((prev) => [...prev, item]);
+            setExcludedIds((prev) => [...prev, item.id]);
+          } catch { /* ignore malformed lines */ }
+        }
       }
     } catch {
       if (id === requestIdRef.current) {
@@ -163,7 +191,10 @@ export function SearchClient({ initialCategories }: SearchClientProps) {
         if (!append) setVibeResults([]);
       }
     } finally {
-      if (id === requestIdRef.current) setLoading(false);
+      if (id === requestIdRef.current) {
+        setLoading(false);
+        setStreaming(false);
+      }
     }
   }
 
@@ -197,6 +228,7 @@ export function SearchClient({ initialCategories }: SearchClientProps) {
     setSavedId(null);
     setExcludedIds([]);
     setPage(0);
+    setStreaming(false);
   }
 
   function switchMode(m: SearchMode) {
@@ -407,8 +439,9 @@ export function SearchClient({ initialCategories }: SearchClientProps) {
         </div>
       )}
 
-      {/* ── Loading ── */}
-      {loading && (
+      {/* ── Loading spinner ── */}
+      {/* Keyword: always show while loading. Vibe: only until first book arrives. */}
+      {loading && (mode === 'keyword' || vibeResults.length === 0) && (
         <div className="flex flex-col items-center py-16 gap-3">
           <div className="w-8 h-8 border-2 border-subtle border-t-[var(--link)] rounded-full animate-spin" />
           <p className="text-sm text-muted">
@@ -418,7 +451,7 @@ export function SearchClient({ initialCategories }: SearchClientProps) {
       )}
 
       {/* ── Error ── */}
-      {!loading && error && (
+      {!loading && !streaming && error && (
         <div className="text-center py-16">
           <p className="text-3xl mb-3 opacity-40">⚠</p>
           <p className="text-secondary text-sm">{error}</p>
@@ -426,7 +459,7 @@ export function SearchClient({ initialCategories }: SearchClientProps) {
       )}
 
       {/* ── No results ── */}
-      {!loading && searched && !error && !hasResults && (
+      {!loading && !streaming && searched && !error && !hasResults && (
         <div className="text-center py-16">
           <p className="text-3xl mb-3 opacity-40">◎</p>
           <p className="text-secondary text-sm">No results for &ldquo;{activeQuery}&rdquo;</p>
@@ -456,7 +489,7 @@ export function SearchClient({ initialCategories }: SearchClientProps) {
       )}
 
       {/* ── Vibe results ── */}
-      {!loading && searched && mode === 'vibe' && vibeResults.length > 0 && (
+      {searched && mode === 'vibe' && vibeResults.length > 0 && (
         <>
           {/* Header row */}
           <div className="flex items-center justify-between mb-4">
@@ -533,8 +566,16 @@ export function SearchClient({ initialCategories }: SearchClientProps) {
             ))}
           </div>
 
+          {/* Streaming indicator */}
+          {streaming && (
+            <div className="flex items-center gap-2 mt-4 text-xs text-muted">
+              <div className="w-3 h-3 border border-subtle border-t-[var(--link)] rounded-full animate-spin shrink-0" />
+              Finding more…
+            </div>
+          )}
+
           {/* Actions below results */}
-          <div className="mt-6 space-y-3">
+          {!streaming && !loading && <div className="mt-6 space-y-3">
             {/* Refinement */}
             {!showRefine ? (
               <button
@@ -578,7 +619,7 @@ export function SearchClient({ initialCategories }: SearchClientProps) {
             >
               {loading ? 'Loading…' : 'Load more recommendations'}
             </button>
-          </div>
+          </div>}
         </>
       )}
 
