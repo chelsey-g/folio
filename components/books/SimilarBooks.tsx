@@ -39,7 +39,7 @@ export function SimilarBooks({ bookId, title, authors, categories, description }
         More like this
       </h2>
 
-      <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-none">
+      <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-none scroll-smooth" style={{ scrollSnapType: 'x mandatory' }}>
         {loading
           ? Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="flex-shrink-0 w-[68px]">
@@ -53,6 +53,7 @@ export function SimilarBooks({ bookId, title, authors, categories, description }
                 key={book.id}
                 href={`/books/${book.id}`}
                 className="flex-shrink-0 w-[68px] group"
+                style={{ scrollSnapAlign: 'start' }}
               >
                 <div className="shadow-md shadow-black/15 rounded-sm group-hover:shadow-xl group-hover:-translate-y-1 transition-all duration-200">
                   <BookCover
