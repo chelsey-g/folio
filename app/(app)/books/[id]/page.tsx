@@ -12,10 +12,16 @@ interface Props { params: Promise<{ id: string }> }
 export default async function BookDetailPage({ params }: Props) {
   const { id } = await params;
 
-  const workRes = await fetch(`https://openlibrary.org/works/${id}.json`, {
-    next: { revalidate: 3600 },
-  });
-  if (!workRes.ok) notFound();
+  let workRes: Response;
+  try {
+    workRes = await fetch(`https://openlibrary.org/works/${id}.json`, {
+      next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(8000),
+    });
+  } catch {
+    notFound();
+  }
+  if (!workRes!.ok) notFound();
 
   const work: OLWork = await workRes.json();
 
