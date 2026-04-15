@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { BookCover } from './BookCover';
 import type { Book } from '@/types';
@@ -14,21 +14,29 @@ interface Props {
 }
 
 export function SimilarBooks({ bookId, title, authors, categories, description }: Props) {
-  const [books, setBooks]   = useState<Book[]>([]);
+  const [books, setBooks]     = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
+  const fetchedRef            = useRef(false);
 
   useEffect(() => {
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
+
+    const controller = new AbortController();
     const params = new URLSearchParams({ id: bookId, title });
     if (description) params.set('description', description.replace(/<[^>]+>/g, '').slice(0, 600));
     (authors ?? []).forEach((a) => params.append('authors', a));
     (categories ?? []).forEach((c) => params.append('categories', c));
 
-    fetch(`/api/similar?${params}`)
+    fetch(`/api/similar?${params}`, { signal: controller.signal })
       .then((r) => r.ok ? r.json() : { items: [] })
       .then((d) => setBooks(d.items ?? []))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [bookId, title, authors, categories, description]);
+
+    return () => controller.abort();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Hide the whole section if loading finished and nothing came back
   if (!loading && books.length === 0) return null;

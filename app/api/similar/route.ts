@@ -58,7 +58,9 @@ async function getSimilarViaClaude(
 Find 12 real published books that are genuinely similar to: "${title}"${authorStr}${genreStr}${descSnip}
 
 Return ONLY a JSON object, no other text:
-{"books": [{"title": "exact title", "author": "exact author name"}]}`;
+{"books": [{"title": "exact title", "author": "exact author name"}]}
+
+List exactly 8 books.`;
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -83,20 +85,22 @@ Return ONLY a JSON object, no other text:
     const parsed = JSON.parse(json) as { books: LLMBook[] };
     if (!Array.isArray(parsed.books)) return [];
 
-    // Validate against OL in parallel
-    const docs = await Promise.all(
-      parsed.books.slice(0, 12).map((b) => lookupOnOL(b.title, b.author))
-    );
-
+    // Validate against OL in parallel — stop collecting after 5 valid results
     const excluded = new Set([normalizeTitle(title)]);
     const results: Book[] = [];
-    for (const doc of docs) {
-      if (!doc || results.length >= 8) continue;
-      const book = olSearchDocToBook(doc);
-      if (excluded.has(normalizeTitle(book.title))) continue;
-      excluded.add(normalizeTitle(book.title));
-      results.push(book);
-    }
+
+    await Promise.all(
+      parsed.books.slice(0, 8).map(async (b) => {
+        if (results.length >= 5) return;
+        const doc = await lookupOnOL(b.title, b.author);
+        if (!doc || results.length >= 5) return;
+        const book = olSearchDocToBook(doc);
+        if (excluded.has(normalizeTitle(book.title))) return;
+        if (results.length >= 5) return;
+        excluded.add(normalizeTitle(book.title));
+        results.push(book);
+      })
+    );
     return results;
   } catch {
     return [];
