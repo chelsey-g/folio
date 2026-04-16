@@ -31,7 +31,7 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/signup');
-  const isPublicRoute = pathname === '/' || isAuthRoute || pathname.startsWith('/auth');
+  const isPublicRoute = pathname === '/' || isAuthRoute || pathname.startsWith('/auth') || pathname.startsWith('/api/agents');
 
   if (!user && !isPublicRoute) {
     return NextResponse.redirect(new URL('/login', request.url));
