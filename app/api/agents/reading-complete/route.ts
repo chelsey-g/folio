@@ -2,8 +2,8 @@ import { after } from 'next/server';
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
-// Edge runtime gives us 30s instead of the default 10s serverless limit
-export const runtime = 'edge';
+// after() requires Node.js runtime — do not use edge runtime here
+export const maxDuration = 30;
 
 interface WebhookPayload {
   type: string;
