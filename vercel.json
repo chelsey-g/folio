@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/agents/reading-pace",
+      "schedule": "0 9 * * *"
+    }
+  ]
+}

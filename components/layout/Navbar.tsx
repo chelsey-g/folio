@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 
 interface Notification {
   id: string;
+  type: string;
   message: string;
   book_title: string | null;
   finished_book_id: string | null;
@@ -126,7 +127,7 @@ export function Navbar({ username }: NavbarProps) {
     const supabase = createClient();
     supabase
       .from('notifications')
-      .select('id, message, book_title, finished_book_id, recommended_book_id, created_at')
+      .select('id, type, message, book_title, finished_book_id, recommended_book_id, created_at')
       .eq('dismissed', false)
       .order('created_at', { ascending: false })
       .limit(20)
@@ -231,9 +232,13 @@ export function Navbar({ username }: NavbarProps) {
                         <li key={n.id} className="px-4 py-3 flex gap-3 items-center group">
                           <span className="text-[var(--link)] text-xs shrink-0">✦</span>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-primary font-medium leading-snug">New recommendation</p>
+                            <p className="text-sm text-primary font-medium leading-snug">
+                              {n.type === 'reading_pace' ? 'Reading pace check-in' : 'New recommendation'}
+                            </p>
                             <p className="text-xs text-muted truncate mt-0.5">
-                              Read next: {n.book_title ?? 'a book you might love'}
+                              {n.type === 'reading_pace'
+                                ? n.message
+                                : `Read next: ${n.book_title ?? 'a book you might love'}`}
                             </p>
                           </div>
                           <button
