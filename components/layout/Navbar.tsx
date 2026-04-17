@@ -186,8 +186,11 @@ export function Navbar({ username }: NavbarProps) {
             ))}
           </nav>
 
+          {/* Right side: notifications + user menu */}
+          <div className="flex items-center gap-1 shrink-0">
+
           {/* Notifications */}
-          <div ref={notifRef} className="relative shrink-0">
+          <div ref={notifRef} className="relative">
             <button
               onClick={() => setNotifOpen((o) => !o)}
               aria-label="Notifications"
@@ -254,7 +257,7 @@ export function Navbar({ username }: NavbarProps) {
           </div>
 
           {/* User menu */}
-          <div ref={dropdownRef} className="relative shrink-0">
+          <div ref={dropdownRef} className="relative">
             <button
               onClick={() => setOpen((o) => !o)}
               aria-label="Account menu"
@@ -346,6 +349,7 @@ export function Navbar({ username }: NavbarProps) {
               </div>
             )}
           </div>
+          </div> {/* end right side wrapper */}
         </div>
       </header>
 
