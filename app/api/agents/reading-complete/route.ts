@@ -1,13 +1,9 @@
-import { after } from 'next/server';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/admin';
 
 export const maxDuration = 30;
 
-// ── Route handler ─────────────────────────────────────────────────────────────
 export async function POST(request: Request) {
-  // Auth via user session (called from the client after marking a book read)
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -16,18 +12,16 @@ export async function POST(request: Request) {
   const finishedBookId: string = body?.bookId;
   if (!finishedBookId) return NextResponse.json({ error: 'Missing bookId' }, { status: 400 });
 
-  // Respond immediately, run Claude in the background
-  after(async () => {
-    await runAgent(user.id, finishedBookId);
-  });
+  await runAgent(supabase, user.id, finishedBookId);
 
   return NextResponse.json({ ok: true });
 }
 
-// ── Agent logic ───────────────────────────────────────────────────────────────
-async function runAgent(userId: string, finishedBookId: string) {
-  const supabase = createAdminClient();
-
+async function runAgent(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  finishedBookId: string,
+) {
   const [{ data: finishedBook }, { data: wantToReadRows }, { data: lovedRows }] =
     await Promise.all([
       supabase.from('books').select('id, title, authors').eq('id', finishedBookId).single(),
@@ -47,6 +41,8 @@ async function runAgent(userId: string, finishedBookId: string) {
         .limit(8),
     ]);
 
+  console.log('Agent: finishedBook=', finishedBook, 'wantCount=', wantToReadRows?.length ?? 0);
+
   type BookRow = { id: string; title: string; authors: string[] | null };
   type WantRow = { book: BookRow | null };
   type LovedRow = { rating: number; book: { title: string; authors: string[] | null } | null };
@@ -56,7 +52,7 @@ async function runAgent(userId: string, finishedBookId: string) {
     .filter((b): b is BookRow => !!b);
 
   if (!finishedBook || wantList.length === 0) {
-    console.log('Agent: skipped — no finished book or empty want-to-read shelf');
+    console.log('Agent: skipped — no finished book data or empty want-to-read shelf');
     return;
   }
 
@@ -67,9 +63,6 @@ async function runAgent(userId: string, finishedBookId: string) {
   const wantLines = wantList
     .map((b) => `- id:${b.id} | "${b.title}" by ${b.authors?.[0] ?? 'Unknown'}`)
     .join('\n');
-
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!serviceKey) { console.error('Agent: missing SUPABASE_SERVICE_ROLE_KEY'); return; }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) { console.error('Agent: missing ANTHROPIC_API_KEY'); return; }
@@ -99,10 +92,10 @@ Return ONLY valid JSON:
       max_tokens: 512,
       messages: [{ role: 'user', content: prompt }],
     }),
-    signal: AbortSignal.timeout(25000),
+    signal: AbortSignal.timeout(20000),
   });
 
-  if (!claudeRes.ok) { console.error('Agent: Claude error', claudeRes.status); return; }
+  if (!claudeRes.ok) { console.error('Agent: Claude error', claudeRes.status, await claudeRes.text()); return; }
 
   const claudeData = await claudeRes.json();
   const rawText: string = claudeData.content?.[0]?.text ?? '{}';
