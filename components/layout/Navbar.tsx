@@ -7,6 +7,15 @@ import { createClient } from '@/lib/supabase/client';
 import { useTheme, type Theme } from '@/components/theme/ThemeProvider';
 import { cn } from '@/lib/utils';
 
+interface Notification {
+  id: string;
+  message: string;
+  book_title: string | null;
+  finished_book_id: string | null;
+  recommended_book_id: string | null;
+  created_at: string;
+}
+
 interface NavbarProps {
   username: string;
 }
@@ -28,6 +37,13 @@ const UserIcon = () => (
 const EditIcon = () => (
   <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M9.5 1.5l2 2L4 11H2v-2L9.5 1.5z" />
+  </svg>
+);
+
+const BellIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8 1.5A4.5 4.5 0 003.5 6v2.5L2 10.5h12L12.5 8.5V6A4.5 4.5 0 008 1.5z" />
+    <path d="M6.5 12.5a1.5 1.5 0 003 0" />
   </svg>
 );
 
@@ -84,8 +100,11 @@ export function Navbar({ username }: NavbarProps) {
   const pathname = usePathname();
   const router   = useRouter();
   const { theme, setTheme } = useTheme();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen]           = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifs, setNotifs]       = useState<Notification[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const notifRef    = useRef<HTMLDivElement>(null);
 
   const DESKTOP_NAV = [
     { href: '/home',   label: 'Home'     },
@@ -96,13 +115,28 @@ export function Navbar({ username }: NavbarProps) {
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setOpen(false);
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false);
     }
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from('notifications')
+      .select('id, message, book_title, finished_book_id, recommended_book_id, created_at')
+      .eq('dismissed', false)
+      .order('created_at', { ascending: false })
+      .limit(20)
+      .then(({ data }) => setNotifs((data as Notification[]) ?? []));
+  }, []);
+
+  async function dismissNotif(id: string) {
+    setNotifs((prev) => prev.filter((n) => n.id !== id));
+    await fetch(`/api/notifications/${id}/dismiss`, { method: 'POST' });
+  }
 
   async function handleSignOut() {
     setOpen(false);
@@ -151,6 +185,73 @@ export function Navbar({ username }: NavbarProps) {
               </Link>
             ))}
           </nav>
+
+          {/* Notifications */}
+          <div ref={notifRef} className="relative shrink-0">
+            <button
+              onClick={() => setNotifOpen((o) => !o)}
+              aria-label="Notifications"
+              className={cn(
+                'w-8 h-8 rounded-full flex items-center justify-center transition-all duration-150 relative',
+                notifOpen
+                  ? 'bg-accent-soft text-link'
+                  : 'text-secondary hover:text-primary hover:bg-surface-hover'
+              )}
+            >
+              <BellIcon />
+              {notifs.length > 0 && (
+                <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-[var(--link)]" />
+              )}
+            </button>
+
+            {notifOpen && (
+              <div
+                className="absolute right-0 top-11 z-50 w-80 bg-surface border border-subtle rounded-2xl shadow-xl shadow-black/15 overflow-hidden"
+                style={{ backdropFilter: 'blur(16px)' }}
+              >
+                <div className="px-4 py-3 border-b border-subtle flex items-center justify-between">
+                  <p className="text-xs font-semibold text-muted uppercase tracking-widest">Notifications</p>
+                  {notifs.length > 0 && (
+                    <span className="text-xs text-muted">{notifs.length} unread</span>
+                  )}
+                </div>
+
+                {notifs.length === 0 ? (
+                  <div className="px-4 py-8 text-center">
+                    <p className="text-sm text-muted">No notifications yet</p>
+                    <p className="text-xs text-muted opacity-60 mt-1">Finish a book to get a recommendation</p>
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-[var(--border)] max-h-96 overflow-y-auto">
+                    {notifs.map((n) => (
+                      <li key={n.id} className="px-4 py-3 flex gap-3 items-start group">
+                        <span className="text-[var(--link)] text-xs mt-0.5 shrink-0">✦</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-secondary leading-relaxed">{n.message}</p>
+                          {n.recommended_book_id && (
+                            <Link
+                              href={`/books/${n.recommended_book_id}`}
+                              onClick={() => setNotifOpen(false)}
+                              className="inline-block text-xs font-semibold text-link hover:opacity-75 transition-opacity mt-1"
+                            >
+                              {n.book_title ?? 'View book'} →
+                            </Link>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => dismissNotif(n.id)}
+                          aria-label="Dismiss"
+                          className="text-muted hover:text-primary transition-colors text-base leading-none opacity-0 group-hover:opacity-100 shrink-0"
+                        >
+                          ×
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* User menu */}
           <div ref={dropdownRef} className="relative shrink-0">
