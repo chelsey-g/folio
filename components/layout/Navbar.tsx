@@ -221,36 +221,41 @@ export function Navbar({ username }: NavbarProps) {
 
                 {notifs.length === 0 ? (
                   <div className="px-4 py-8 text-center">
-                    <p className="text-sm text-muted">No notifications yet</p>
-                    <p className="text-xs text-muted opacity-60 mt-1">Finish a book to get a recommendation</p>
+                    <p className="text-sm text-muted">No recommendations yet</p>
+                    <p className="text-xs text-muted opacity-60 mt-1">Finish a book to get one</p>
                   </div>
                 ) : (
-                  <ul className="divide-y divide-[var(--border)] max-h-96 overflow-y-auto">
-                    {notifs.map((n) => (
-                      <li key={n.id} className="px-4 py-3 flex gap-3 items-start group">
-                        <span className="text-[var(--link)] text-xs mt-0.5 shrink-0">✦</span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs text-secondary leading-relaxed">{n.message}</p>
-                          {n.recommended_book_id && (
-                            <Link
-                              href={`/books/${n.recommended_book_id}`}
-                              onClick={() => setNotifOpen(false)}
-                              className="inline-block text-xs font-semibold text-link hover:opacity-75 transition-opacity mt-1"
-                            >
-                              {n.book_title ?? 'View book'} →
-                            </Link>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => dismissNotif(n.id)}
-                          aria-label="Dismiss"
-                          className="text-muted hover:text-primary transition-colors text-base leading-none opacity-0 group-hover:opacity-100 shrink-0"
-                        >
-                          ×
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+                  <>
+                    <ul className="divide-y divide-[var(--border)]">
+                      {notifs.map((n) => (
+                        <li key={n.id} className="px-4 py-3 flex gap-3 items-center group">
+                          <span className="text-[var(--link)] text-xs shrink-0">✦</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-primary font-medium leading-snug">New recommendation</p>
+                            <p className="text-xs text-muted truncate mt-0.5">
+                              Read next: {n.book_title ?? 'a book you might love'}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => dismissNotif(n.id)}
+                            aria-label="Dismiss"
+                            className="text-muted hover:text-primary transition-colors text-base leading-none opacity-0 group-hover:opacity-100 shrink-0"
+                          >
+                            ×
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="border-t border-subtle p-2">
+                      <Link
+                        href="/recommendations"
+                        onClick={() => setNotifOpen(false)}
+                        className="flex items-center justify-center gap-1.5 w-full px-3 py-2 rounded-lg text-xs font-semibold text-link hover:bg-accent-soft transition-colors"
+                      >
+                        View all recommendations →
+                      </Link>
+                    </div>
+                  </>
                 )}
               </div>
             )}
