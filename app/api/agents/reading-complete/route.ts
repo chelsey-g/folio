@@ -1,51 +1,33 @@
 import { after } from 'next/server';
 import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
-// after() requires Node.js runtime — do not use edge runtime here
 export const maxDuration = 30;
-
-interface WebhookPayload {
-  type: string;
-  table: string;
-  record: { user_id: string; book_id: string; shelf: string; [key: string]: unknown };
-  old_record: { shelf: string; [key: string]: unknown } | null;
-}
 
 // ── Route handler ─────────────────────────────────────────────────────────────
 export async function POST(request: Request) {
-  // 1. Verify secret
-  const secret = request.headers.get('x-agent-secret');
-  if (!secret || secret !== process.env.AGENT_WEBHOOK_SECRET) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  // Auth via user session (called from the client after marking a book read)
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // 2. Parse + filter
-  const payload: WebhookPayload = await request.json();
-  if (
-    payload.table !== 'user_books' ||
-    payload.record?.shelf !== 'read' ||
-    payload.old_record?.shelf === 'read'
-  ) {
-    return NextResponse.json({ ok: true, skipped: true });
-  }
+  const body = await request.json().catch(() => null);
+  const finishedBookId: string = body?.bookId;
+  if (!finishedBookId) return NextResponse.json({ error: 'Missing bookId' }, { status: 400 });
 
-  const { user_id: userId, book_id: finishedBookId } = payload.record;
-
-  // 3. Respond immediately so Supabase webhook doesn't time out,
-  //    then do the slow Claude work in the background
+  // Respond immediately, run Claude in the background
   after(async () => {
-    await runAgent(userId, finishedBookId);
+    await runAgent(user.id, finishedBookId);
   });
 
   return NextResponse.json({ ok: true });
 }
 
-// ── Agent logic (runs after response is sent) ─────────────────────────────────
+// ── Agent logic ───────────────────────────────────────────────────────────────
 async function runAgent(userId: string, finishedBookId: string) {
   const supabase = createAdminClient();
 
-  // Fetch context in parallel
   const [{ data: finishedBook }, { data: wantToReadRows }, { data: lovedRows }] =
     await Promise.all([
       supabase.from('books').select('id, title, authors').eq('id', finishedBookId).single(),
@@ -80,14 +62,15 @@ async function runAgent(userId: string, finishedBookId: string) {
 
   const lovedLines = ((lovedRows ?? []) as unknown as LovedRow[])
     .map((r) => r.book ? `"${r.book.title}" by ${r.book.authors?.[0] ?? 'Unknown'} (${r.rating}★)` : null)
-    .filter(Boolean)
-    .join('\n');
+    .filter(Boolean).join('\n');
 
   const wantLines = wantList
     .map((b) => `- id:${b.id} | "${b.title}" by ${b.authors?.[0] ?? 'Unknown'}`)
     .join('\n');
 
-  // Ask Claude to pick the next book
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceKey) { console.error('Agent: missing SUPABASE_SERVICE_ROLE_KEY'); return; }
+
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) { console.error('Agent: missing ANTHROPIC_API_KEY'); return; }
 
@@ -126,18 +109,11 @@ Return ONLY valid JSON:
   const json = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
 
   let rec: { book_id: string; book_title: string; message: string };
-  try {
-    rec = JSON.parse(json);
-  } catch {
-    console.error('Agent: failed to parse Claude response', rawText);
-    return;
-  }
+  try { rec = JSON.parse(json); }
+  catch { console.error('Agent: failed to parse Claude response', rawText); return; }
 
   const validBook = wantList.find((b) => b.id === rec.book_id);
-  if (!validBook) {
-    console.warn('Agent: Claude picked an unknown book_id:', rec.book_id);
-    return;
-  }
+  if (!validBook) { console.warn('Agent: Claude picked unknown book_id:', rec.book_id); return; }
 
   const { error } = await supabase.from('notifications').insert({
     user_id:             userId,
@@ -149,6 +125,5 @@ Return ONLY valid JSON:
   });
 
   if (error) { console.error('Agent: insert failed', error.message); return; }
-
-  console.log(`Agent: done — told user ${userId} to read "${validBook.title}"`);
+  console.log(`Agent: done — recommended "${validBook.title}" to user ${userId}`);
 }

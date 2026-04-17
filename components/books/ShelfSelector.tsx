@@ -51,7 +51,17 @@ export function ShelfSelector({ book, userBook, onUpdate }: ShelfSelectorProps) 
       }, { onConflict: 'user_id,book_id' })
       .select().single();
 
-    if (!error && data) { setCurrent(data as UserBook); onUpdate?.(data as UserBook); }
+    if (!error && data) {
+      setCurrent(data as UserBook);
+      onUpdate?.(data as UserBook);
+      if (shelf === 'read' && current?.shelf !== 'read') {
+        fetch('/api/agents/reading-complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bookId: book.id }),
+        });
+      }
+    }
     setLoading(false);
   }
 
