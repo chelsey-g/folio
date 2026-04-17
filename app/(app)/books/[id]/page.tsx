@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { formatAuthors, olWorkToBook } from '@/lib/utils';
+import { formatAuthors, olWorkToBook, formatCategory } from '@/lib/utils';
 import { BookCover } from '@/components/books/BookCover';
 import { BookActions } from '@/components/books/BookActions';
 import { SimilarBooks } from '@/components/books/SimilarBooks';
@@ -65,9 +65,9 @@ export default async function BookDetailPage({ params }: Props) {
         </div>
 
         <div className="flex-1 min-w-0 flex flex-col sm:justify-end pb-1">
-          {book.categories?.[0] && (
+          {book.categories?.[0] && formatCategory(book.categories[0]) && (
             <p className="text-xs font-semibold text-link tracking-widest uppercase mb-3">
-              {book.categories[0]}
+              {formatCategory(book.categories[0])}
             </p>
           )}
 

@@ -3,7 +3,7 @@ import { BookCover } from './BookCover';
 import { StarRating } from '@/components/ui/StarRating';
 import { Badge } from '@/components/ui/Badge';
 import { ProgressBar } from '@/components/ui/ProgressBar';
-import { formatAuthors, truncate } from '@/lib/utils';
+import { formatAuthors, truncate, formatCategory } from '@/lib/utils';
 import type { Book, UserBook, ShelfType } from '@/types';
 import { SHELF_LABELS } from '@/types';
 
@@ -89,9 +89,9 @@ export function BookCard({ book, userBook, compact = false }: BookCardProps) {
             </Badge>
           )}
           {userBook?.rating ? <StarRating value={userBook.rating} readonly size="sm" /> : null}
-          {!compact && book.categories?.[0] && (
+          {!compact && book.categories?.[0] && formatCategory(book.categories[0]) && (
             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(book.categories[0])}`}>
-              {book.categories[0]}
+              {formatCategory(book.categories[0])}
             </span>
           )}
         </div>
