@@ -15,6 +15,7 @@ export function ReadingGoal({ goal: initialGoal, readThisYear, year }: ReadingGo
   const [editing, setEditing] = useState(false);
   const [input,   setInput]   = useState(String(initialGoal ?? ''));
   const [saving,  setSaving]  = useState(false);
+  const [error,   setError]   = useState<string | null>(null);
 
   const percent   = goal && goal > 0 ? Math.min(100, Math.round((readThisYear / goal) * 100)) : 0;
   const remaining = goal ? Math.max(0, goal - readThisYear) : 0;
@@ -30,12 +31,17 @@ export function ReadingGoal({ goal: initialGoal, readThisYear, year }: ReadingGo
     const val = parseInt(input);
     if (!val || val < 1 || val > 9999) return;
     setSaving(true);
+    setError(null);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { error } = await supabase.from('profiles').update({ reading_goal: val }).eq('id', user.id);
-      if (!error) setGoal(val);
+    if (!user) { setSaving(false); return; }
+    const { error: err } = await supabase.from('profiles').update({ reading_goal: val }).eq('id', user.id);
+    if (err) {
+      setError(err.message);
+      setSaving(false);
+      return;
     }
+    setGoal(val);
     setSaving(false);
     setEditing(false);
   }
@@ -84,6 +90,7 @@ export function ReadingGoal({ goal: initialGoal, readThisYear, year }: ReadingGo
             />
             <span className="text-sm text-muted">books</span>
           </div>
+          {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
         </div>
         <div className="flex items-center gap-2">
           <button
