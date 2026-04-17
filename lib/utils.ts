@@ -1,5 +1,39 @@
 import type { OLSearchDoc, OLWork, Book } from '@/types';
 
+function cleanSubjects(subjects: string[] | null | undefined): string[] | null {
+  if (!subjects) return null;
+
+  const seen = new Set<string>();
+  const clean: string[] = [];
+
+  for (const s of subjects) {
+    let label: string | null = null;
+
+    if (s.startsWith('nyt:')) {
+      // e.g. "nyt:combined-print-and-e-book-fiction=2023-11-26" → "NYT Bestseller · Fiction"
+      const listName = s.slice(4).split('=')[0]; // e.g. "combined-print-and-e-book-fiction"
+      const isNonfiction = listName.includes('nonfiction');
+      const isFiction    = listName.includes('fiction') && !isNonfiction;
+      const isYA         = listName.includes('young-adult');
+      const genre = isYA ? 'Young Adult' : isNonfiction ? 'Nonfiction' : isFiction ? 'Fiction' : '';
+      label = genre ? `NYT Bestseller · ${genre}` : 'NYT Bestseller';
+    } else if (s.includes(':') || s.includes('=') || s.length > 40) {
+      continue;
+    } else {
+      label = s;
+    }
+
+    const key = label.toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      clean.push(label);
+    }
+    if (clean.length === 3) break;
+  }
+
+  return clean.length > 0 ? clean : null;
+}
+
 export function cn(...classes: (string | undefined | null | false)[]) {
   return classes.filter(Boolean).join(' ');
 }
@@ -16,7 +50,7 @@ export function olSearchDocToBook(doc: OLSearchDoc): Book {
     isbn_13: doc.isbn?.find((i) => i.length === 13) ?? null,
     page_count: doc.number_of_pages_median ?? null,
     published_date: doc.first_publish_year?.toString() ?? null,
-    categories: doc.subject?.slice(0, 3) ?? null,
+    categories: cleanSubjects(doc.subject),
     created_at: new Date().toISOString(),
   };
 }
@@ -38,7 +72,7 @@ export function olWorkToBook(work: OLWork, authors: string[]): Book {
     isbn_13: null,
     page_count: null,
     published_date: null,
-    categories: work.subjects?.slice(0, 3) ?? null,
+    categories: cleanSubjects(work.subjects),
     created_at: new Date().toISOString(),
   };
 }
