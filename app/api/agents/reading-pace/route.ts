@@ -33,7 +33,7 @@ export async function GET(request: Request) {
   const [{ data: currentlyReadingRows }, { data: readThisYearRows }] = await Promise.all([
     supabase
       .from('user_books')
-      .select('user_id, current_page, started_at, book:books(id, title, page_count)')
+      .select('user_id, book:books(title)')
       .in('user_id', userIds)
       .eq('shelf', 'reading'),
     supabase
@@ -44,12 +44,7 @@ export async function GET(request: Request) {
       .gte('finished_at', startOfYear.toISOString()),
   ]);
 
-  type CRRow = {
-    user_id: string;
-    current_page: number | null;
-    started_at: string | null;
-    book: { id: string; title: string; page_count: number | null } | null;
-  };
+  type CRRow = { user_id: string; book: { title: string } | null };
 
   const readingByUser = new Map<string, CRRow[]>();
   for (const row of (currentlyReadingRows ?? []) as unknown as CRRow[]) {
@@ -85,35 +80,24 @@ export async function GET(request: Request) {
     const userId = profile.id;
     const readingGoal = profile.reading_goal as number;
 
-    if (recentlyNotified.has(userId)) { console.log(`Skip ${userId}: notified recently`); continue; }
+    if (recentlyNotified.has(userId)) continue;
 
-    const allReadingBooks = readingByUser.get(userId) ?? [];
-    const activeBooks = allReadingBooks.filter(
-      (b) => b.current_page && b.current_page > 0 && b.started_at && b.book?.page_count
-    );
-    console.log(`User ${userId}: goal=${readingGoal}, readingBooks=${allReadingBooks.length}, activeBooks=${activeBooks.length}`, JSON.stringify(allReadingBooks));
-    if (activeBooks.length === 0) continue;
+    // Must have at least one currently reading book
+    const readingBooks = readingByUser.get(userId) ?? [];
+    if (readingBooks.length === 0) continue;
 
-    // Calculate reading velocity as books/day across all active books
-    let booksPerDay = 0;
-    for (const b of activeBooks) {
-      const daysReading = Math.max(1, (now.getTime() - new Date(b.started_at!).getTime()) / 86400000);
-      const pagesPerDay = b.current_page! / daysReading;
-      booksPerDay += pagesPerDay / b.book!.page_count!;
-    }
-
+    // Compare books read so far vs expected pace
     const booksReadThisYear = readCountByUser.get(userId) ?? 0;
-    const projectedTotal = Math.round(booksReadThisYear + booksPerDay * daysLeftInYear);
-    const booksShort = readingGoal - projectedTotal;
-    console.log(`User ${userId}: projected=${projectedTotal}, goal=${readingGoal}, short=${booksShort}`);
+    const expectedByNow = readingGoal * (daysIntoYear / 365);
+    const booksShort = expectedByNow - booksReadThisYear;
 
-    if (booksShort < 1) { console.log(`Skip ${userId}: on pace`); continue; }
+    if (booksShort < 1) continue; // On pace, skip
 
     // Build Claude prompt
-    const currentTitle = activeBooks[0].book!.title;
-    const prompt = `A reader's goal is ${readingGoal} books this year. They've finished ${booksReadThisYear} so far and are currently reading "${currentTitle}". At their current pace they'll finish about ${projectedTotal} books by December — ${booksShort} short of their goal.
+    const currentTitle = readingBooks[0].book?.title ?? 'their current book';
+    const prompt = `A reader's goal is ${readingGoal} books this year. They've finished ${booksReadThisYear} so far and are currently reading "${currentTitle}". They're a bit behind their goal pace.
 
-Write a warm, friendly 2-sentence nudge encouraging them to read a bit more. Sound like a supportive friend, not a productivity app. Don't mention numbers.
+Write a warm, friendly 2-sentence nudge encouraging them to read a bit more. Sound like a supportive friend, not a productivity app. Don't mention specific numbers.
 
 Return only the message text.`;
 
@@ -153,7 +137,7 @@ Return only the message text.`;
     }
 
     notified++;
-    console.log(`Reading pace agent: notified user ${userId} (projected ${projectedTotal}/${readingGoal})`);
+    console.log(`Reading pace agent: notified user ${userId} (${booksReadThisYear}/${readingGoal} books)`);
   }
 
   return NextResponse.json({ ok: true, processed: profiles.length, notified });
