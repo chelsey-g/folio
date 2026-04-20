@@ -229,25 +229,31 @@ export function Navbar({ username }: NavbarProps) {
                   <>
                     <ul className="divide-y divide-[var(--border)]">
                       {notifs.map((n) => (
-                        <li key={n.id} className="px-4 py-3 flex gap-3 items-center group">
-                          <span className="text-[var(--link)] text-xs shrink-0">✦</span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-primary font-medium leading-snug">
-                              {n.type === 'reading_pace' ? 'Reading pace check-in' : 'New recommendation'}
-                            </p>
-                            <p className="text-xs text-muted truncate mt-0.5">
-                              {n.type === 'reading_pace'
-                                ? n.message
-                                : `Read next: ${n.book_title ?? 'a book you might love'}`}
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => dismissNotif(n.id)}
-                            aria-label="Dismiss"
-                            className="text-muted hover:text-primary transition-colors text-base leading-none opacity-0 group-hover:opacity-100 shrink-0"
+                        <li key={n.id} className="group">
+                          <Link
+                            href="/home"
+                            onClick={() => setNotifOpen(false)}
+                            className="px-4 py-3 flex gap-3 items-center hover:bg-surface-hover transition-colors"
                           >
-                            ×
-                          </button>
+                            <span className="text-[var(--link)] text-xs shrink-0">✦</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-primary font-medium leading-snug">
+                                {n.type === 'reading_pace' ? 'Reading pace check-in' : 'New recommendation'}
+                              </p>
+                              <p className="text-xs text-muted truncate mt-0.5">
+                                {n.type === 'reading_pace'
+                                  ? n.message
+                                  : `Read next: ${n.book_title ?? 'a book you might love'}`}
+                              </p>
+                            </div>
+                            <button
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); dismissNotif(n.id); }}
+                              aria-label="Dismiss"
+                              className="text-muted hover:text-primary transition-colors text-base leading-none opacity-0 group-hover:opacity-100 shrink-0"
+                            >
+                              ×
+                            </button>
+                          </Link>
                         </li>
                       ))}
                     </ul>

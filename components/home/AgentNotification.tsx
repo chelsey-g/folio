@@ -7,6 +7,7 @@ import type { Book } from '@/types';
 
 interface Notification {
   id: string;
+  type: string;
   message: string;
   book_title: string | null;
   finished_book_id: string | null;
@@ -29,10 +30,31 @@ export function AgentNotification({ notification, recommendedBook, finishedBookT
 
   if (dismissed) return null;
 
+  // Reading pace notification
+  if (notification.type === 'reading_pace') {
+    return (
+      <div className="animate-in bg-surface border border-[var(--link)]/20 rounded-2xl p-4 shadow-sm shadow-black/5">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs font-semibold text-link flex items-center gap-1.5">
+            <span>✦</span>
+            Reading pace check-in
+          </p>
+          <button
+            onClick={dismiss}
+            className="text-muted hover:text-primary transition-colors text-lg leading-none"
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+        <p className="text-sm text-secondary leading-relaxed">{notification.message}</p>
+      </div>
+    );
+  }
+
+  // Reading complete / book recommendation notification
   return (
     <div className="animate-in bg-surface border border-[var(--link)]/20 rounded-2xl p-4 shadow-sm shadow-black/5 relative">
-
-      {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <p className="text-xs font-semibold text-link flex items-center gap-1.5">
           <span>✦</span>
@@ -47,7 +69,6 @@ export function AgentNotification({ notification, recommendedBook, finishedBookT
         </button>
       </div>
 
-      {/* Body */}
       <div className="flex gap-3 items-start">
         {recommendedBook && (
           <div className="shrink-0 shadow-md shadow-black/15 rounded-sm">

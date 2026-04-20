@@ -27,7 +27,6 @@ export default async function HomePage() {
     supabase.from('notifications')
       .select('*')
       .eq('user_id', user.id)
-      .eq('type', 'reading_complete')
       .eq('dismissed', false)
       .order('created_at', { ascending: false })
       .limit(1)
