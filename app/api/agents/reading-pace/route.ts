@@ -85,11 +85,13 @@ export async function GET(request: Request) {
     const userId = profile.id;
     const readingGoal = profile.reading_goal as number;
 
-    if (recentlyNotified.has(userId)) continue;
+    if (recentlyNotified.has(userId)) { console.log(`Skip ${userId}: notified recently`); continue; }
 
-    const activeBooks = (readingByUser.get(userId) ?? []).filter(
+    const allReadingBooks = readingByUser.get(userId) ?? [];
+    const activeBooks = allReadingBooks.filter(
       (b) => b.current_page && b.current_page > 0 && b.started_at && b.book?.page_count
     );
+    console.log(`User ${userId}: goal=${readingGoal}, readingBooks=${allReadingBooks.length}, activeBooks=${activeBooks.length}`, JSON.stringify(allReadingBooks));
     if (activeBooks.length === 0) continue;
 
     // Calculate reading velocity as books/day across all active books
@@ -103,8 +105,9 @@ export async function GET(request: Request) {
     const booksReadThisYear = readCountByUser.get(userId) ?? 0;
     const projectedTotal = Math.round(booksReadThisYear + booksPerDay * daysLeftInYear);
     const booksShort = readingGoal - projectedTotal;
+    console.log(`User ${userId}: projected=${projectedTotal}, goal=${readingGoal}, short=${booksShort}`);
 
-    if (booksShort < 1) continue; // On pace, skip
+    if (booksShort < 1) { console.log(`Skip ${userId}: on pace`); continue; }
 
     // Build Claude prompt
     const currentTitle = activeBooks[0].book!.title;
