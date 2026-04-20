@@ -4,11 +4,10 @@ import { createAdminClient } from '@/lib/supabase/admin';
 export const maxDuration = 60;
 
 export async function GET(request: Request) {
-  // TODO: re-enable after testing
-  // const authHeader = request.headers.get('authorization');
-  // if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-  //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  // }
+  const authHeader = request.headers.get('authorization');
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   const supabase = createAdminClient();
   const now = new Date();
